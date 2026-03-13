@@ -1,5 +1,5 @@
 import { motion, AnimatePresence } from "framer-motion";
-import { Compass, Flame, MapPinned } from "lucide-react";
+import { Compass, Flame, Swords, TimerReset } from "lucide-react";
 
 interface GeoOnboardingProps {
   open: boolean;
@@ -9,18 +9,23 @@ interface GeoOnboardingProps {
 const steps = [
   {
     icon: Compass,
-    title: "Swipe to choose",
-    body: "Every round shows one place image and two location options. Swipe toward the option you believe is correct."
+    title: "One photo, two countries",
+    body: "Every round starts with one place image and a 30-second clock. Tap or swipe toward the country you think matches the scene."
   },
   {
     icon: Flame,
-    title: "Build streak + score",
-    body: "Hard rounds pay bigger points. Keep a streak alive to stack multipliers and level up faster."
+    title: "Streaks still matter",
+    body: "Correct reads build a streak, and the scoring engine keeps rewarding consistent answers under pressure."
   },
   {
-    icon: MapPinned,
-    title: "65% hard by design",
-    body: "Each hour deck is tuned to 65% confusing look-alike rounds and 35% obvious contrast rounds."
+    icon: Swords,
+    title: "The rival keeps pace",
+    body: "A simulated rival scores alongside you during the run, so the margin can swing even when your card looks clean."
+  },
+  {
+    icon: TimerReset,
+    title: "Misses trigger context",
+    body: "Wrong calls open a short reassess break with the right answer, clue chips, and extra context images before you continue."
   }
 ];
 
@@ -43,11 +48,19 @@ export function GeoOnboarding({ open, onClose }: GeoOnboardingProps) {
             exit={{ y: "100%" }}
             transition={{ type: "spring", damping: 28, stiffness: 260 }}
           >
-            <div className="gs-sheet-handle" />
-            <h2>How GeoSwipe Works</h2>
+            <div className="gs-onboarding-brand">
+              <span className="gs-onboarding-wordmark">GeoSwipe</span>
+            </div>
+
+            <p className="gs-sheet-brow">Map mode</p>
+            <h2>Same run logic. Cleaner GeoSwipe presentation.</h2>
+            <p className="gs-onboarding-lead">
+              Lime actions, charcoal framing, softer copy, and one dominant image per read. The rules stay simple.
+            </p>
             <div className="gs-onboarding-list">
               {steps.map((step) => {
                 const Icon = step.icon;
+
                 return (
                   <article key={step.title} className="gs-onboarding-card">
                     <div className="gs-onboarding-icon">

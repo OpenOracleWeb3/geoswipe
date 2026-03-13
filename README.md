@@ -31,6 +31,16 @@ VITE_GOOGLE_STREET_VIEW_API_KEY=...
 
 Without a key, the app falls back to Wikimedia Commons search + Unsplash source URLs.
 
+## Desktop via Capacitor
+
+Once `npm install` has been run (the new Capacitor dependencies require network access), you can bootstrap the native shell and copy the web build into it:
+
+1. `npm run cap:sync` (runs the Vite build and syncs `dist/` into the native workspace)
+2. `npx cap add macos`/`npx cap add windows` (run once to graft the native projects)
+3. `npm run cap:open:macos` or `npm run cap:open:windows` to open the platform workspace in Xcode or Visual Studio
+
+`cap:sync` must be rerun whenever the web app changes before rebuilding the native binary.
+
 ## Current game model
 - 20 rounds per session
 - 9s per round

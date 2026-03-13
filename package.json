@@ -6,9 +6,14 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "cap:copy": "npm run build && npx cap copy",
+    "cap:sync": "npm run build && npx cap sync",
+    "cap:open:macos": "npx cap open macos",
+    "cap:open:windows": "npx cap open windows"
   },
   "dependencies": {
+    "@capacitor/core": "^5.0.0",
     "ethers": "^6.15.0",
     "framer-motion": "^12.23.24",
     "lucide-react": "^0.462.0",
@@ -16,6 +21,9 @@
     "react-dom": "^18.3.1"
   },
   "devDependencies": {
+    "@capacitor/cli": "^5.0.0",
+    "@capacitor/macos": "^5.0.0",
+    "@capacitor/windows": "^5.0.0",
     "@types/react": "^18.3.23",
     "@types/react-dom": "^18.3.7",
     "@vitejs/plugin-react-swc": "^3.11.0",

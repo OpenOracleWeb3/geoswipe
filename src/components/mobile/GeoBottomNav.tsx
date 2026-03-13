@@ -16,11 +16,11 @@ export function GeoBottomNav({ active, onChange }: GeoBottomNavProps) {
       </button>
       <button className={active === "learn" ? "active" : ""} onClick={() => onChange("learn")}>
         <Info size={16} />
-        Learn
+        Guide
       </button>
       <button className={active === "session" ? "active" : ""} onClick={() => onChange("session")}>
         <ScrollText size={16} />
-        Session
+        Run
       </button>
     </nav>
   );
