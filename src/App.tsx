@@ -8,14 +8,14 @@ import { useRoundFeedback } from "./hooks/useRoundFeedback";
 import { calculateRoundScore } from "./lib/scoring";
 import { buildSessionSummary, createGameSession } from "./lib/sessionEngine";
 import { getBreakContextImages, getRoundMedia, getRoundMediaPreviewUrl } from "./services/geoApi";
-import type { BreakContextPayload, GameMode, GamePhase, GeoRound, RoundMedia, RoundOutcome, SwipeDirection } from "./types/game";
+import type { BreakContextPayload, GamePhase, GeoRound, RoundMedia, RoundOutcome, SwipeDirection } from "./types/game";
 
 const REASSESS_AFTER_MISSES = 3;
 const RESULT_FLASH_MS = 1100;
 
-function createSessionBundle(mode: GameMode) {
+function createSessionBundle() {
   const startedAt = new Date();
-  const session = createGameSession(startedAt, mode);
+  const session = createGameSession(startedAt);
 
   return { startedAt, session };
 }
@@ -36,8 +36,7 @@ function getRoundModifierLabel(round: GeoRound): string {
 }
 
 function GeoSwipeApp() {
-  const initialBundle = useMemo(() => createSessionBundle("progressive"), []);
-  const [mode, setMode] = useState<GameMode>(initialBundle.session.mode);
+  const initialBundle = useMemo(() => createSessionBundle(), []);
   const [onboardingOpen, setOnboardingOpen] = useState(() => localStorage.getItem("geoswipe:onboarding:v1") !== "seen");
   const [sessionStartedAt, setSessionStartedAt] = useState(initialBundle.startedAt);
   const [session, setSession] = useState(initialBundle.session);
@@ -86,12 +85,11 @@ function GeoSwipeApp() {
     }
   };
 
-  const startNewSession = (nextMode: GameMode = mode) => {
-    const bundle = createSessionBundle(nextMode);
+  const startNewSession = () => {
+    const bundle = createSessionBundle();
 
     clearTransitionTimeout();
     breakRequestRef.current += 1;
-    setMode(nextMode);
     setSessionStartedAt(bundle.startedAt);
     setSession(bundle.session);
     setRoundIndex(0);
@@ -368,28 +366,13 @@ function GeoSwipeApp() {
       <header className="gs-topbar">
         <div className="gs-brand-mark">
           <div>
-            <p className="gs-brand-caption">Pack {session.packId} · {mode === "progressive" ? "Pano mode" : "Free mode"}</p>
+            <p className="gs-brand-caption">Pack {session.packId}</p>
             <span className="gs-brand-title">GeoSwipe</span>
           </div>
         </div>
 
         <div className="gs-topbar-trailing">
-          <div className="gs-mode-switch" role="tablist" aria-label="Game mode">
-            <button
-              className={`gs-mode-button ${mode === "progressive" ? "active" : ""}`}
-              onClick={() => startNewSession("progressive")}
-            >
-              Progressive
-            </button>
-            <button
-              className={`gs-mode-button ${mode === "free" ? "active" : ""}`}
-              onClick={() => startNewSession("free")}
-            >
-              Free
-            </button>
-          </div>
-
-          <button className="gs-ghost-button" onClick={() => startNewSession(mode)}>
+          <button className="gs-ghost-button" onClick={startNewSession}>
             <RefreshCcw size={16} />
             New Pack
           </button>
@@ -403,7 +386,7 @@ function GeoSwipeApp() {
 
       <main className={`gs-main-content ${showMinimalHome ? "minimal" : ""}`}>
         <section className={`gs-arena-panel ${showMinimalHome ? "minimal-home" : ""}`}>
-          {sessionDone ? <RunSummaryCard summary={summary} startedAt={sessionStartedAt} onRestart={() => startNewSession(mode)} /> : null}
+          {sessionDone ? <RunSummaryCard summary={summary} startedAt={sessionStartedAt} onRestart={startNewSession} /> : null}
 
           {!sessionDone && phase !== "reassess_break" && currentRound ? (
             <div className="gs-live-round-shell">
