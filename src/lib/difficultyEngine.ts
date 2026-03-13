@@ -219,7 +219,7 @@ export function createPackSessionSeed(seedDate: Date, packId: string): string {
   return `${createSessionSeed(seedDate)}:pack-${packId}`;
 }
 
-export function createSessionRounds(seedDate: Date, mode: GameMode = "continent", packId = "001"): GeoRound[] {
+export function createSessionRounds(seedDate: Date, _mode: GameMode = "continent", packId = "001"): GeoRound[] {
   const progressiveRounds = createProgressiveRounds(seedDate, packId);
   return progressiveRounds;
 }
