@@ -1,10 +1,14 @@
+interface GoogleMapsNamespace {
+  maps: typeof google.maps;
+}
+
 declare global {
   interface Window {
-    google?: typeof google;
+    google?: GoogleMapsNamespace;
   }
 }
 
-type GoogleMapsApi = typeof google;
+type GoogleMapsApi = GoogleMapsNamespace;
 
 const GOOGLE_MAPS_SCRIPT_ID = "geoswipe-google-maps-js";
 const GOOGLE_MAPS_KEY = (import.meta as ImportMeta & { env?: Record<string, string | undefined> }).env

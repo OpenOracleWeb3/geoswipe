@@ -7,7 +7,7 @@ interface StreetViewPanoramaProps {
   alt: string;
 }
 
-const PANORAMA_OPTIONS: GoogleStreetViewPanoramaOptions = {
+const PANORAMA_OPTIONS: google.maps.StreetViewPanoramaOptions = {
   addressControl: false,
   clickToGo: true,
   disableDefaultUI: false,
@@ -23,14 +23,14 @@ const PANORAMA_OPTIONS: GoogleStreetViewPanoramaOptions = {
 
 export function StreetViewPanorama({ media, alt }: StreetViewPanoramaProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
-  const panoramaRef = useRef<GoogleStreetViewPanorama | null>(null);
+  const panoramaRef = useRef<google.maps.StreetViewPanorama | null>(null);
   const [isReady, setIsReady] = useState(false);
   const [loadFailed, setLoadFailed] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
     let readyTimer: number | null = null;
-    const listeners: GoogleMapsEventListener[] = [];
+    const listeners: google.maps.MapsEventListener[] = [];
 
     setIsReady(false);
     setLoadFailed(false);

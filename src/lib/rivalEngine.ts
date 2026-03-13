@@ -1,4 +1,3 @@
-import { getStageMetaByStage } from "./difficultyEngine";
 import type { GeoRound, RivalMomentum, RivalRoundResult } from "../types/game";
 
 type RandomFn = () => number;
@@ -43,11 +42,8 @@ function getMomentum(round: GeoRound): RivalMomentum {
     return "surge";
   }
 
-  if (round.stage === "americas" && round.roundInStage === 4) {
-    return "cold";
-  }
-
-  if (round.stage === "asia_oceania" && round.roundInStage === 2) {
+  // Cold momentum for certain rounds based on round number
+  if (round.roundNumber === 4 || round.roundNumber === 12) {
     return "cold";
   }
 
@@ -98,11 +94,11 @@ export function createRivalPlan(rounds: GeoRound[], sessionSeed: string): Record
   const random = createRandom(`${sessionSeed}:rival`);
 
   return rounds.reduce<Record<string, RivalRoundResult>>((plan, round) => {
-    const stageMeta = getStageMetaByStage(round.stage);
     const momentum = getMomentum(round);
+    const baseAccuracy = 0.72; // Default rival accuracy
     const accuracyChance = Math.max(
       0.28,
-      Math.min(0.93, stageMeta.rivalAccuracy + DIFFICULTY_ACCURACY_OFFSET[round.difficulty] + getMomentumBonus(momentum))
+      Math.min(0.93, baseAccuracy + DIFFICULTY_ACCURACY_OFFSET[round.difficulty] + getMomentumBonus(momentum))
     );
     const isCorrect = random() <= accuracyChance;
     const surgePoints = momentum === "surge" && isCorrect ? 40 : 0;

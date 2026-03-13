@@ -226,7 +226,7 @@ function GeoSwipeApp() {
 
         setBreakContext({
           headline: outcome.timedOut ? "Timer expired" : `${outcome.selectedCountry} was the decoy`,
-          subhead: `${outcomeReason} Correct answer: ${round.correctCountry}.`,
+          subhead: `${outcomeReason} Correct answer: ${round.correctAnswer}.`,
           clueChips: [roundTag(round), round.pair.visualTags.slice(0, 2).join(" · ")],
           coachingLine: round.pair.coachingLine,
           imageUrls
@@ -239,7 +239,7 @@ function GeoSwipeApp() {
 
         setBreakContext({
           headline: "Reassess the read",
-          subhead: `Correct answer: ${round.correctCountry}.`,
+          subhead: `Correct answer: ${round.correctAnswer}.`,
           clueChips: [roundTag(round), round.pair.visualTags.slice(0, 2).join(" · ")],
           coachingLine: round.pair.coachingLine,
           imageUrls: []
@@ -299,8 +299,10 @@ function GeoSwipeApp() {
       correct: isCorrect,
       timedOut,
       selectedDirection: timedOut ? null : direction,
+      selectedAnswer: selectedCountry,
       selectedCountry,
-      correctCountry: currentRound.correctCountry,
+      correctAnswer: currentRound.correctAnswer,
+      correctCountry: currentRound.correctAnswer,
       scoreBreakdown: breakdown,
       rival,
       playerScoreAfter: nextPlayerScore,

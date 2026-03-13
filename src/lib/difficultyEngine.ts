@@ -219,12 +219,8 @@ export function createPackSessionSeed(seedDate: Date, packId: string): string {
   return `${createSessionSeed(seedDate)}:pack-${packId}`;
 }
 
-export function createSessionRounds(seedDate: Date, mode: GameMode = "progressive", packId = "001"): GeoRound[] {
+export function createSessionRounds(seedDate: Date, mode: GameMode = "continent", packId = "001"): GeoRound[] {
   const progressiveRounds = createProgressiveRounds(seedDate, packId);
-  if (mode === "free") {
-    return createFreeModeRounds(progressiveRounds, seedDate, packId);
-  }
-
   return progressiveRounds;
 }
 
@@ -250,18 +246,6 @@ function createProgressiveRounds(seedDate: Date, packId: string): GeoRound[] {
   }
 
   return rounds;
-}
-
-function createFreeModeRounds(rounds: GeoRound[], seedDate: Date, packId: string): GeoRound[] {
-  const freeRandom = createRandom(hashSeed(`${createPackSessionSeed(seedDate, packId)}:free`));
-
-  return shuffle(rounds, freeRandom).map((round, index) => ({
-    ...round,
-    id: `${round.id}-free-${index + 1}`,
-    roundNumber: index + 1,
-    modifier: "none",
-    timerSeconds: 0
-  }));
 }
 
 export function summarizeDifficulty(rounds: GeoRound[]): DifficultySummary {

@@ -23,6 +23,7 @@ export function createGameSession(startedAt: Date, mode: GameMode = "continent",
   return {
     mode,
     queueId: packId,
+    packId,
     seed,
     startedAtIso: startedAt.toISOString(),
     rounds,

@@ -58,8 +58,8 @@ export function GeoChoiceCard({
   const resultKicker = resultOutcome?.correct ? "Locked in" : resultOutcome?.timedOut ? "Clock ran out" : "Missed read";
   const resultCaption = resultOutcome
     ? resultOutcome.correct
-      ? `${resultOutcome.correctCountry} · +${resultOutcome.scoreBreakdown.delta} pts`
-      : `Correct answer: ${resultOutcome.correctCountry}`
+      ? `${resultOutcome.correctAnswer} · +${resultOutcome.scoreBreakdown.delta} pts`
+      : `Correct answer: ${resultOutcome.correctAnswer}`
     : "";
   const frameStyle = {
     "--gs-load-progress": `${Math.max(0, Math.min(100, Math.round(loadingProgress)))}%`,

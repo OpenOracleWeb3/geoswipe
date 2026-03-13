@@ -147,7 +147,9 @@ export interface RoundOutcome {
   timedOut: boolean;
   selectedDirection: SwipeDirection | null;
   selectedAnswer: string | null;
+  selectedCountry: string | null;
   correctAnswer: string;
+  correctCountry: string;
   scoreBreakdown: RoundScoreBreakdown;
   rival: RivalRoundResult;
   playerScoreAfter: number;
@@ -191,6 +193,7 @@ export interface BreakContextPayload {
 export interface GameSessionPlan {
   mode: GameMode;
   queueId: string;
+  packId: string;
   seed: string;
   startedAtIso: string;
   rounds: GeoRound[];

@@ -33,7 +33,7 @@ export function ReassessBreakCard({
           <img src={originalImageUrl} alt="Original round" className="gs-break-primary-image" />
           <div className="gs-break-primary-copy">
             <span>{outcome.timedOut ? "Timed out" : `You chose ${outcome.selectedCountry}`}</span>
-            <strong>{context?.subhead ?? `Correct answer: ${round.correctCountry}`}</strong>
+            <strong>{context?.subhead ?? `Correct answer: ${round.correctAnswer}`}</strong>
           </div>
         </article>
 
@@ -47,7 +47,7 @@ export function ReassessBreakCard({
           ) : (
             <div className="gs-break-context-images">
               {(context?.imageUrls ?? []).map((imageUrl) => (
-                <img key={imageUrl} src={imageUrl} alt={`${round.correctCountry} context`} />
+                <img key={imageUrl} src={imageUrl} alt={`${round.correctAnswer} context`} />
               ))}
             </div>
           )}
