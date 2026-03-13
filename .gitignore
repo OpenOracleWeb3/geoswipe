@@ -1,0 +1,6 @@
+node_modules
+dist
+*.tsbuildinfo
+*.d.ts
+!vite-env.d.ts
+.vite
