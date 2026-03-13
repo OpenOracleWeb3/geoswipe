@@ -197,6 +197,7 @@ async function buildGoogleStreetViewMedia(country: string, variantKey: string): 
 
   return {
     kind: "streetview",
+    sceneKey: getStreetViewVariantKey(country, variantKey),
     panoId: metadata.pano_id,
     previewUrl: buildGoogleStreetViewPreviewUrl(metadata.pano_id, pov.heading, pov.pitch),
     heading: pov.heading,
@@ -258,14 +259,15 @@ export function getRoundMediaPreviewUrl(media: RoundMedia): string {
 }
 
 export async function getRoundMedia(round: GeoRound): Promise<RoundMedia> {
-  const googleMedia = await buildGoogleStreetViewMedia(round.correctCountry, round.id);
+  const country = round.correctAnswer;
+  const googleMedia = await buildGoogleStreetViewMedia(country, round.id);
   if (googleMedia) {
     return googleMedia;
   }
 
   const queryTerms = [
-    round.correctCountry,
-    ...(COUNTRY_SEARCH_KEYWORDS[round.correctCountry] ?? [round.correctCountry, "street", "city"]),
+    country,
+    ...(COUNTRY_SEARCH_KEYWORDS[country] ?? [country, "street", "city"]),
     ...round.pair.contextSearchTerms.slice(0, 2)
   ];
   const wikimediaImages = await fetchWikimediaImages(queryTerms, 4);
@@ -278,7 +280,7 @@ export async function getRoundMedia(round: GeoRound): Promise<RoundMedia> {
 
   return {
     kind: "image",
-    url: buildGenericPhotoFallback(round.correctCountry, round.pair.visualTags[0] ?? "landscape", round.roundNumber)
+    url: buildGenericPhotoFallback(country, round.pair.visualTags[0] ?? "landscape", round.roundNumber)
   };
 }
 
@@ -287,9 +289,10 @@ export async function getRoundImageUrl(round: GeoRound): Promise<string> {
 }
 
 export async function getBreakContextImages(round: GeoRound): Promise<string[]> {
+  const country = round.correctAnswer;
   const queryTerms = [
-    round.correctCountry,
-    ...(COUNTRY_SEARCH_KEYWORDS[round.correctCountry] ?? [round.correctCountry, "street", "city"]),
+    country,
+    ...(COUNTRY_SEARCH_KEYWORDS[country] ?? [country, "street", "city"]),
     ...round.pair.contextSearchTerms
   ];
   const wikimediaImages = await fetchWikimediaImages(queryTerms, 5);
@@ -300,14 +303,14 @@ export async function getBreakContextImages(round: GeoRound): Promise<string[]> 
 
   const googleFallbacks = GOOGLE_KEY
     ? (await Promise.all(
-        [0, 1, 2].map((variant) => buildGoogleStreetViewMedia(round.correctCountry, `${round.id}:context:${variant}`))
+        [0, 1, 2].map((variant) => buildGoogleStreetViewMedia(country, `${round.id}:context:${variant}`))
       ))
         .filter((media): media is Exclude<RoundMedia, { kind: "image" }> => Boolean(media && media.kind === "streetview"))
         .map((media) => media.previewUrl)
     : [];
   const descriptorFallbacks = round.pair.contextSearchTerms
     .slice(0, 3)
-    .map((term, index) => buildGenericPhotoFallback(round.correctCountry, term, index));
+    .map((term, index) => buildGenericPhotoFallback(country, term, index));
 
   return uniq([...wikimediaImages, ...googleFallbacks, ...descriptorFallbacks]).slice(0, 3);
 }

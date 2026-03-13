@@ -170,25 +170,44 @@ function createRound(pair: CountryPair, roundNumber: number, stageMeta: StageMet
   const useOriginalOrder = random() >= 0.5;
   const leftOption = useOriginalOrder ? firstOption : secondOption;
   const rightOption = useOriginalOrder ? secondOption : firstOption;
-  const correctCountry = random() >= 0.5 ? firstOption : secondOption;
-  const decoyCountry = correctCountry === firstOption ? secondOption : firstOption;
+  const correctAnswer = random() >= 0.5 ? firstOption : secondOption;
+  const decoyAnswer = correctAnswer === firstOption ? secondOption : firstOption;
   const modifier = pickRoundModifier(stageMeta.stage, roundInStage);
 
   return {
     id: `${pair.id}-${roundNumber}`,
     roundNumber,
-    stageNumber: stageMeta.stageNumber,
-    roundInStage,
-    stage: stageMeta.stage,
+    mode: "continent",
     difficulty: pair.difficultyBand,
     modifier,
     timerSeconds: stageMeta.timerSeconds,
-    pair,
+    pair: {
+      id: pair.id,
+      mode: "continent",
+      options: pair.options,
+      rationale: pair.rationale,
+      coachingLine: pair.coachingLine,
+      regionTag: pair.regionTag,
+      visualTags: pair.visualTags,
+      contextSearchTerms: pair.contextSearchTerms
+    },
+    location: {
+      id: `loc-${pair.id}`,
+      label: correctAnswer,
+      country: correctAnswer,
+      continentId: stageMeta.stage === "americas" ? "north_america" : stageMeta.stage === "europe" ? "europe" : stageMeta.stage === "africa_middle_east" ? "africa" : "asia",
+      continentLabel: stageMeta.label,
+      worldRegionId: stageMeta.stage === "americas" ? "north_america" : stageMeta.stage === "europe" ? "central_europe" : stageMeta.stage === "africa_middle_east" ? "north_africa" : "east_asia",
+      worldRegionLabel: stageMeta.label,
+      coordinates: [0, 0],
+      tags: pair.visualTags
+    },
     leftOption,
     rightOption,
-    correctCountry,
-    decoyCountry,
-    correctDirection: correctCountry === leftOption ? "left" : "right"
+    correctAnswer,
+    decoyAnswer,
+    correctDirection: correctAnswer === leftOption ? "left" : "right",
+    sceneKey: `${pair.id}-${roundNumber}`
   };
 }
 

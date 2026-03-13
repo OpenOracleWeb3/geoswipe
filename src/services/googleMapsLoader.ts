@@ -1,3 +1,11 @@
+declare global {
+  interface Window {
+    google?: typeof google;
+  }
+}
+
+type GoogleMapsApi = typeof google;
+
 const GOOGLE_MAPS_SCRIPT_ID = "geoswipe-google-maps-js";
 const GOOGLE_MAPS_KEY = (import.meta as ImportMeta & { env?: Record<string, string | undefined> }).env
   ?.VITE_GOOGLE_STREET_VIEW_API_KEY;
