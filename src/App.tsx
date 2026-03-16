@@ -469,7 +469,7 @@ function GeoSwipeApp() {
                   <X size={16} />
                   Resume
                 </button>
-                <button type="button" className="gs-utility-menu-button" onClick={startNewSession}>
+                <button type="button" className="gs-utility-menu-button" onClick={() => startNewSession()}>
                   <RotateCcw size={16} />
                   Restart Run
                 </button>

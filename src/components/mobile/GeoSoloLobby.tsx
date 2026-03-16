@@ -74,7 +74,6 @@ interface GeoSoloLobbyProps {
 
 export function GeoSoloLobby({ onPlay, onBack, elo }: GeoSoloLobbyProps) {
   const [loaded, setLoaded] = useState(false);
-  const [hoveredCat, setHoveredCat] = useState<string | null>(null);
   const [selectedCat, setSelectedCat] = useState<string | null>(null);
 
   const rank = getRank(elo);
@@ -504,8 +503,6 @@ export function GeoSoloLobby({ onPlay, onBack, elo }: GeoSoloLobbyProps) {
                 key={cat.id}
                 className={`gs-lobby-cat-btn ${selectedCat === cat.id ? "selected" : ""}`}
                 onClick={() => setSelectedCat(cat.id)}
-                onMouseEnter={() => setHoveredCat(cat.id)}
-                onMouseLeave={() => setHoveredCat(null)}
                 style={{
                   animation: loaded
                     ? `gs-lobby-slideUp 0.5s ${0.4 + i * 0.1}s cubic-bezier(0.25,0.46,0.45,0.94) both`
