@@ -45,7 +45,7 @@ export function GeoChoiceCard({
   const [swipeDirection, setSwipeDirection] = useState<SwipeDirection | null>(null);
   const [exploreMode, setExploreMode] = useState(false);
   const swipeDirectionRef = useRef<SwipeDirection | null>(null);
-  const isStreetView = media?.kind === "streetview";
+  const isStreetView = media?.kind === "streetview" && Boolean(media.panoId);
 
   const x = useMotionValue(0);
   const rotate = useTransform(x, [-200, 0, 200], [-25, 0, 25]);

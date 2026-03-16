@@ -37,6 +37,12 @@ export function StreetViewPanorama({ media, alt, interactive }: StreetViewPanora
     setTilesLoaded(false);
     setFailed(false);
 
+    // Don't attempt interactive pano if there's no valid pano ID
+    if (!media.panoId) {
+      setFailed(true);
+      return;
+    }
+
     loadGoogleMapsApi()
       .then((googleMaps) => {
         if (cancelled || !containerRef.current) return;
