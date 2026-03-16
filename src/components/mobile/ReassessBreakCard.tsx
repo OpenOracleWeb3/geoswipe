@@ -32,7 +32,7 @@ export function ReassessBreakCard({
         <article className="gs-break-primary">
           <img src={originalImageUrl} alt="Original round" className="gs-break-primary-image" />
           <div className="gs-break-primary-copy">
-            <span>{outcome.timedOut ? "Timed out" : `You chose ${outcome.selectedCountry}`}</span>
+            <span>{outcome.timedOut ? "Timed out" : `You chose ${outcome.selectedAnswer}`}</span>
             <strong>{context?.subhead ?? `Correct answer: ${round.correctAnswer}`}</strong>
           </div>
         </article>
@@ -40,7 +40,7 @@ export function ReassessBreakCard({
         <article className="gs-break-context">
           <div className="gs-break-context-top">
             <CheckCircle2 size={16} />
-            <span>Correct country context</span>
+            <span>Correct answer context</span>
           </div>
           {isLoading ? (
             <div className="gs-break-loading">Loading surrounding references...</div>

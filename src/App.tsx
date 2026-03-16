@@ -1,21 +1,24 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { BookOpen, RefreshCcw } from "lucide-react";
+import { LogOut, RotateCcw, Settings2, X } from "lucide-react";
 import { GeoChoiceCard } from "./components/mobile/GeoChoiceCard";
-import { GeoOnboarding } from "./components/mobile/GeoOnboarding";
+import { GeoHomeScreen } from "./components/mobile/GeoHomeScreen";
+import { GeoProfileScreen } from "./components/mobile/GeoProfileScreen";
+import { GeoSoloLobby } from "./components/mobile/GeoSoloLobby";
 import { ReassessBreakCard } from "./components/mobile/ReassessBreakCard";
 import { RunSummaryCard } from "./components/mobile/RunSummaryCard";
 import { useRoundFeedback } from "./hooks/useRoundFeedback";
 import { calculateRoundScore } from "./lib/scoring";
+import { calculateSwipeElo, loadPlayerStats, recordSession } from "./lib/rankingEngine";
 import { buildSessionSummary, createGameSession } from "./lib/sessionEngine";
-import { getBreakContextImages, getRoundMedia, getRoundMediaPreviewUrl } from "./services/geoApi";
-import type { BreakContextPayload, GamePhase, GeoRound, RoundMedia, RoundOutcome, SwipeDirection } from "./types/game";
+import { getBreakContextImages, getPreloadedRoundMedia, getRoundMediaPreviewUrl, preloadRoundMedia } from "./services/geoApi";
+import type { BreakContextPayload, CategoryMode, GamePhase, GeoRound, RoundMedia, RoundOutcome, SwipeDirection } from "./types/game";
 
 const REASSESS_AFTER_MISSES = 3;
-const RESULT_FLASH_MS = 1100;
+const RESULT_FLASH_MIN_MS = 2500;
 
-function createSessionBundle() {
+function createSessionBundle(category: CategoryMode = "countries") {
   const startedAt = new Date();
-  const session = createGameSession(startedAt);
+  const session = createGameSession(startedAt, category);
 
   return { startedAt, session };
 }
@@ -37,7 +40,9 @@ function getRoundModifierLabel(round: GeoRound): string {
 
 function GeoSwipeApp() {
   const initialBundle = useMemo(() => createSessionBundle(), []);
-  const [onboardingOpen, setOnboardingOpen] = useState(() => localStorage.getItem("geoswipe:onboarding:v1") !== "seen");
+  const [screen, setScreen] = useState<"home" | "solo_lobby" | "profile" | "playing">("home");
+  const [activeCategory, setActiveCategory] = useState<CategoryMode>("countries");
+  const [menuOpen, setMenuOpen] = useState(false);
   const [sessionStartedAt, setSessionStartedAt] = useState(initialBundle.startedAt);
   const [session, setSession] = useState(initialBundle.session);
   const [roundIndex, setRoundIndex] = useState(0);
@@ -57,6 +62,10 @@ function GeoSwipeApp() {
   const [correctGuesses, setCorrectGuesses] = useState(0);
   const [outcomes, setOutcomes] = useState<RoundOutcome[]>([]);
   const [lastOutcome, setLastOutcome] = useState<RoundOutcome | null>(null);
+  const [globalElo, setGlobalElo] = useState(() => loadPlayerStats().globalElo);
+  const [eloDelta, setEloDelta] = useState<number | null>(null);
+  const [lastSwipeEloDelta, setLastSwipeEloDelta] = useState<number | null>(null);
+  const sessionRecordedRef = useRef(false);
 
   const breakRequestRef = useRef(0);
   const transitionTimeoutRef = useRef<number | null>(null);
@@ -78,6 +87,15 @@ function GeoSwipeApp() {
     [correctGuesses, maxStreak, outcomes, playerScore, rivalScore, session.rounds]
   );
 
+  // Record ELO when session completes
+  useEffect(() => {
+    if (!sessionDone || sessionRecordedRef.current || outcomes.length === 0) return;
+    sessionRecordedRef.current = true;
+    const result = recordSession(summary, activeCategory);
+    setGlobalElo(result.stats.globalElo);
+    setEloDelta(result.globalDelta);
+  }, [sessionDone, outcomes.length, summary, activeCategory]);
+
   const clearTransitionTimeout = () => {
     if (transitionTimeoutRef.current !== null) {
       window.clearTimeout(transitionTimeoutRef.current);
@@ -85,11 +103,14 @@ function GeoSwipeApp() {
     }
   };
 
-  const startNewSession = () => {
-    const bundle = createSessionBundle();
+  const startNewSession = (category: CategoryMode = activeCategory) => {
+    const bundle = createSessionBundle(category);
+    setActiveCategory(category);
 
     clearTransitionTimeout();
     breakRequestRef.current += 1;
+    setMenuOpen(false);
+    setScreen("playing");
     setSessionStartedAt(bundle.startedAt);
     setSession(bundle.session);
     setRoundIndex(0);
@@ -109,12 +130,28 @@ function GeoSwipeApp() {
     setCorrectGuesses(0);
     setOutcomes([]);
     setLastOutcome(null);
+    setEloDelta(null);
+    setLastSwipeEloDelta(null);
+    sessionRecordedRef.current = false;
+  };
+
+  const quitToStart = () => {
+    startNewSession();
+    setScreen("home");
+  };
+
+  const openSoloLobby = () => {
+    setScreen("solo_lobby");
+  };
+
+  const startSoloRun = (category: string) => {
+    startNewSession(category as CategoryMode);
   };
 
   useEffect(() => clearTransitionTimeout, []);
 
   useEffect(() => {
-    if (!currentRound || sessionDone) {
+    if (screen !== "playing" || !currentRound || sessionDone) {
       return;
     }
 
@@ -160,7 +197,13 @@ function GeoSwipeApp() {
     setCurrentRoundMedia(null);
     setCurrentImageUrl("");
 
-    getRoundMedia(currentRound)
+    // Preload next 3 rounds while loading current
+    const upcoming = session.rounds.slice(roundIndex + 1, roundIndex + 4);
+    if (upcoming.length > 0) {
+      preloadRoundMedia(upcoming);
+    }
+
+    getPreloadedRoundMedia(currentRound)
       .then((media) => {
         if (cancelled) {
           return;
@@ -200,15 +243,15 @@ function GeoSwipeApp() {
         window.clearTimeout(settleTimeout);
       }
     };
-  }, [currentRound?.id, session.seed, sessionDone]);
+  }, [currentRound?.id, screen, session.seed, sessionDone]);
 
   useEffect(() => {
-    if (!currentRound) {
+    if (screen !== "playing" || !currentRound) {
       return;
     }
 
     setSecondsLeft(currentRound.timerSeconds);
-  }, [currentRound?.id, session.seed]);
+  }, [currentRound?.id, screen, session.seed]);
 
   const loadBreakContext = (round: GeoRound, outcome: RoundOutcome) => {
     const requestId = breakRequestRef.current + 1;
@@ -222,10 +265,10 @@ function GeoSwipeApp() {
           return;
         }
 
-        const outcomeReason = outcome.timedOut ? "Timer expired before the read locked in." : `You chose ${outcome.selectedCountry}.`;
+        const outcomeReason = outcome.timedOut ? "Timer expired before the read locked in." : `You chose ${outcome.selectedAnswer}.`;
 
         setBreakContext({
-          headline: outcome.timedOut ? "Timer expired" : `${outcome.selectedCountry} was the decoy`,
+          headline: outcome.timedOut ? "Timer expired" : `${outcome.selectedAnswer} was the decoy`,
           subhead: `${outcomeReason} Correct answer: ${round.correctAnswer}.`,
           clueChips: [roundTag(round), round.pair.visualTags.slice(0, 2).join(" · ")],
           coachingLine: round.pair.coachingLine,
@@ -322,11 +365,33 @@ function GeoSwipeApp() {
     setLastOutcome(outcome);
     void playRoundFeedback({ correct: isCorrect, timedOut });
 
+    // Live ELO update per swipe
+    const swipeDelta = calculateSwipeElo({
+      correct: isCorrect,
+      timedOut,
+      difficulty: currentRound.difficulty,
+      streak: nextStreak,
+      currentElo: globalElo
+    });
+    setGlobalElo((prev) => Math.max(0, prev + swipeDelta));
+    setLastSwipeEloDelta(swipeDelta);
+
     const shouldShowReassess = !isCorrect && nextMissCount >= REASSESS_AFTER_MISSES;
 
-    transitionTimeoutRef.current = window.setTimeout(() => {
-      transitionTimeoutRef.current = null;
+    // Hold the result screen for at least RESULT_FLASH_MIN_MS,
+    // and also wait for the next round's image to be preloaded.
+    const nextRound = session.rounds[roundIndex + 1];
+    const minDelay = new Promise<void>((r) => {
+      transitionTimeoutRef.current = window.setTimeout(() => {
+        transitionTimeoutRef.current = null;
+        r();
+      }, RESULT_FLASH_MIN_MS);
+    });
+    const nextImageReady = nextRound
+      ? getPreloadedRoundMedia(nextRound).then(() => {}).catch(() => {})
+      : Promise.resolve();
 
+    void Promise.all([minDelay, nextImageReady]).then(() => {
       if (shouldShowReassess) {
         setMissCount(0);
         setPhase("reassess_break");
@@ -335,11 +400,11 @@ function GeoSwipeApp() {
       }
 
       advanceRound();
-    }, RESULT_FLASH_MS);
+    });
   };
 
   useEffect(() => {
-    if (!currentRound || sessionDone || phase !== "round_active" || currentRound.timerSeconds <= 0) {
+    if (screen !== "playing" || !currentRound || sessionDone || phase !== "round_active" || currentRound.timerSeconds <= 0) {
       return;
     }
 
@@ -356,39 +421,71 @@ function GeoSwipeApp() {
     }, 1000);
 
     return () => window.clearInterval(timer);
-  }, [currentRound, phase, sessionDone]);
+  }, [currentRound, screen, phase, sessionDone]);
 
-  const closeOnboarding = () => {
-    localStorage.setItem("geoswipe:onboarding:v1", "seen");
-    setOnboardingOpen(false);
-  };
+  if (screen === "home") {
+    return (
+      <div className="gs-app-shell home">
+        <GeoHomeScreen onStartSolo={openSoloLobby} onProfile={() => setScreen("profile")} elo={globalElo} />
+      </div>
+    );
+  }
+
+  if (screen === "profile") {
+    return (
+      <div className="gs-app-shell home">
+        <GeoProfileScreen elo={globalElo} onBack={() => setScreen("home")} />
+      </div>
+    );
+  }
+
+  if (screen === "solo_lobby") {
+    return (
+      <div className="gs-app-shell home">
+        <GeoSoloLobby onPlay={startSoloRun} onBack={() => setScreen("home")} elo={globalElo} />
+      </div>
+    );
+  }
 
   return (
     <div className="gs-app-shell">
-      <header className="gs-topbar">
-        <div className="gs-brand-mark">
-          <div>
-            <p className="gs-brand-caption">Pack {session.packId}</p>
-            <span className="gs-brand-title">GeoSwipe</span>
-          </div>
-        </div>
-
-        <div className="gs-topbar-trailing">
-          <button className="gs-ghost-button" onClick={startNewSession}>
-            <RefreshCcw size={16} />
-            New Pack
+      {!sessionDone ? (
+        <div className="gs-app-actions">
+          <button
+            type="button"
+            className="gs-icon-button gs-utility-menu-trigger"
+            aria-label={menuOpen ? "Close round menu" : "Open round menu"}
+            aria-expanded={menuOpen}
+            onClick={() => setMenuOpen((value) => !value)}
+          >
+            {menuOpen ? <X size={18} /> : <Settings2 size={18} />}
           </button>
 
-          <button className="gs-ghost-button" onClick={() => setOnboardingOpen(true)}>
-            <BookOpen size={16} />
-            Rules
-          </button>
+          {menuOpen ? (
+            <>
+              <button type="button" className="gs-utility-menu-scrim" aria-label="Close round menu" onClick={() => setMenuOpen(false)} />
+              <div className="gs-utility-menu">
+                <button type="button" className="gs-utility-menu-button" onClick={() => setMenuOpen(false)}>
+                  <X size={16} />
+                  Resume
+                </button>
+                <button type="button" className="gs-utility-menu-button" onClick={startNewSession}>
+                  <RotateCcw size={16} />
+                  Restart Run
+                </button>
+                <button type="button" className="gs-utility-menu-button danger" onClick={quitToStart}>
+                  <LogOut size={16} />
+                  Quit Run
+                </button>
+              </div>
+            </>
+          ) : null}
         </div>
-      </header>
+      ) : null}
 
       <main className={`gs-main-content ${showMinimalHome ? "minimal" : ""}`}>
         <section className={`gs-arena-panel ${showMinimalHome ? "minimal-home" : ""}`}>
-          {sessionDone ? <RunSummaryCard summary={summary} startedAt={sessionStartedAt} onRestart={startNewSession} /> : null}
+          {sessionDone ? <RunSummaryCard summary={summary} startedAt={sessionStartedAt} eloDelta={eloDelta} elo={globalElo} onRestart={startNewSession} /> : null}
 
           {!sessionDone && phase !== "reassess_break" && currentRound ? (
             <div className="gs-live-round-shell">
@@ -405,6 +502,8 @@ function GeoSwipeApp() {
                 disabled={phase !== "round_active"}
                 minimal={showMinimalHome}
                 modifierLabel={currentRound.modifier === "none" ? undefined : getRoundModifierLabel(currentRound)}
+                elo={globalElo}
+                eloDelta={phase === "round_result" ? lastSwipeEloDelta : null}
                 onGuess={resolveRound}
               />
             </div>
@@ -422,8 +521,6 @@ function GeoSwipeApp() {
           ) : null}
         </section>
       </main>
-
-      <GeoOnboarding open={onboardingOpen} onClose={closeOnboarding} />
     </div>
   );
 }

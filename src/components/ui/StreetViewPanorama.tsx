@@ -5,6 +5,7 @@ import type { StreetViewRoundMedia } from "../../types/game";
 interface StreetViewPanoramaProps {
   media: StreetViewRoundMedia;
   alt: string;
+  interactive: boolean;
 }
 
 const PANORAMA_OPTIONS: google.maps.StreetViewPanoramaOptions = {
@@ -21,25 +22,24 @@ const PANORAMA_OPTIONS: google.maps.StreetViewPanoramaOptions = {
   zoomControl: true
 };
 
-export function StreetViewPanorama({ media, alt }: StreetViewPanoramaProps) {
+export function StreetViewPanorama({ media, alt, interactive }: StreetViewPanoramaProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const panoramaRef = useRef<google.maps.StreetViewPanorama | null>(null);
-  const [isReady, setIsReady] = useState(false);
-  const [loadFailed, setLoadFailed] = useState(false);
+  const [tilesLoaded, setTilesLoaded] = useState(false);
+  const [failed, setFailed] = useState(false);
 
+  // Load the pano immediately on mount — don't wait for interactive toggle
   useEffect(() => {
     let cancelled = false;
-    let readyTimer: number | null = null;
+    let giveUpTimer: number | null = null;
     const listeners: google.maps.MapsEventListener[] = [];
 
-    setIsReady(false);
-    setLoadFailed(false);
+    setTilesLoaded(false);
+    setFailed(false);
 
     loadGoogleMapsApi()
       .then((googleMaps) => {
-        if (cancelled || !containerRef.current) {
-          return;
-        }
+        if (cancelled || !containerRef.current) return;
 
         const panorama = new googleMaps.maps.StreetViewPanorama(containerRef.current, {
           ...PANORAMA_OPTIONS,
@@ -49,68 +49,67 @@ export function StreetViewPanorama({ media, alt }: StreetViewPanoramaProps) {
         });
 
         panoramaRef.current = panorama;
-        panorama.setPano(media.panoId);
-        panorama.setPov({ heading: media.heading, pitch: media.pitch });
-        panorama.setZoom(media.zoom);
-        panorama.setOptions(PANORAMA_OPTIONS);
 
         listeners.push(
-          panorama.addListener("pano_changed", () => {
-            if (!cancelled) {
-              setIsReady(true);
-            }
+          panorama.addListener("tilesloaded", () => {
+            if (!cancelled) setTilesLoaded(true);
           })
         );
 
         if (typeof panorama.getStatus === "function") {
           listeners.push(
             panorama.addListener("status_changed", () => {
-              if (cancelled) {
-                return;
-              }
-
+              if (cancelled) return;
               const status = panorama.getStatus?.();
-              if (status && status !== "OK") {
-                setLoadFailed(true);
-                return;
-              }
-
-              setIsReady(true);
+              if (status && status !== "OK") setFailed(true);
             })
           );
         }
 
-        readyTimer = window.setTimeout(() => {
-          if (!cancelled) {
-            setIsReady(true);
-          }
-        }, 900);
+        giveUpTimer = window.setTimeout(() => {
+          if (!cancelled && !tilesLoaded) setFailed(true);
+        }, 6000);
       })
       .catch(() => {
-        if (!cancelled) {
-          setLoadFailed(true);
-        }
+        if (!cancelled) setFailed(true);
       });
 
     return () => {
       cancelled = true;
-      if (readyTimer !== null) {
-        window.clearTimeout(readyTimer);
-      }
-      listeners.forEach((listener) => listener.remove?.());
+      if (giveUpTimer !== null) window.clearTimeout(giveUpTimer);
+      listeners.forEach((l) => l.remove?.());
       if (window.google?.maps.event?.clearInstanceListeners && panoramaRef.current) {
         window.google.maps.event.clearInstanceListeners(panoramaRef.current);
       }
       panoramaRef.current = null;
     };
-  }, [media.heading, media.panoId, media.pitch, media.zoom]);
+  }, [media.panoId, media.heading, media.pitch, media.zoom]);
+
+  // Show the pano canvas when: user toggled interactive AND tiles loaded AND not failed
+  const showPano = interactive && tilesLoaded && !failed;
 
   return (
-    <div className={`gs-panorama-shell ${isReady ? "ready" : ""}`}>
-      <img src={media.previewUrl} alt={alt} className="gs-round-image gs-round-image-preview" />
-      <div ref={containerRef} className={`gs-street-view-canvas ${isReady && !loadFailed ? "ready" : ""}`} />
-      {!isReady ? <div className="gs-panorama-status">Entering Street View...</div> : null}
-      {loadFailed ? <div className="gs-panorama-status fallback">Street View preview only</div> : null}
+    <div className="gs-panorama-shell ready">
+      {/* Static Street View image — always underneath */}
+      <img
+        src={media.previewUrl}
+        alt={alt}
+        className="gs-round-image"
+        style={{ opacity: showPano ? 0 : 1, transition: "opacity 0.3s ease" }}
+      />
+
+      {/* Interactive pano canvas — always mounted (preloading), visibility controlled */}
+      <div
+        ref={containerRef}
+        className="gs-street-view-canvas"
+        style={{
+          position: "absolute",
+          inset: 0,
+          opacity: showPano ? 1 : 0,
+          pointerEvents: showPano ? "auto" : "none",
+          transition: "opacity 0.3s ease"
+        }}
+      />
     </div>
   );
 }

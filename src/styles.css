@@ -1,4 +1,4 @@
-@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Outfit:wght@300;400;500;600;700;800;900&family=Dela+Gothic+One&display=swap");
 
 @font-face {
   font-family: "Aeonik TRIAL";
@@ -86,6 +86,13 @@ button:disabled {
   padding: 18px 14px 28px;
 }
 
+.gs-app-shell.home {
+  width: 100%;
+  max-width: none;
+  margin: 0;
+  padding: 0;
+}
+
 .gs-app-shell::before {
   content: "";
   position: absolute;
@@ -99,10 +106,461 @@ button:disabled {
   pointer-events: none;
 }
 
+.gs-app-shell.home::before {
+  display: none;
+}
+
 .gs-topbar,
 .gs-main-content {
   position: relative;
   z-index: 1;
+}
+
+.gs-home-screen {
+  position: relative;
+  min-height: 100dvh;
+  overflow: hidden;
+  background: linear-gradient(170deg, #03090f 0%, #0a1628 30%, #0d1f3c 60%, #081224 100%);
+  color: #eef8ff;
+}
+
+.gs-home-screen::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(circle at 24% 22%, rgba(46, 204, 113, 0.14), transparent 28%),
+    radial-gradient(circle at 78% 30%, rgba(52, 152, 219, 0.18), transparent 30%),
+    radial-gradient(circle at 50% 100%, rgba(46, 204, 113, 0.12), transparent 34%);
+  pointer-events: none;
+}
+
+.gs-home-inner {
+  position: relative;
+  z-index: 2;
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 18px;
+  padding: 40px 20px;
+  text-align: center;
+}
+
+.gs-home-stars {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.gs-home-star {
+  position: absolute;
+  left: var(--x);
+  top: var(--y);
+  width: var(--size);
+  height: var(--size);
+  border-radius: 999px;
+  background: #ffffff;
+  opacity: var(--opacity);
+  animation: gs-home-twinkle calc(2s + var(--delay)) ease-in-out infinite alternate;
+  animation-delay: var(--delay);
+}
+
+.gs-home-wave {
+  position: absolute;
+  top: 0;
+  width: 8px;
+  height: 100%;
+  background: repeating-linear-gradient(
+    180deg,
+    rgba(46, 204, 113, 0.3) 0px,
+    rgba(52, 152, 219, 0.2) 22px,
+    rgba(46, 204, 113, 0.08) 44px,
+    transparent 66px,
+    rgba(46, 204, 113, 0.3) 88px
+  );
+  background-size: 100% 200%;
+  animation: gs-home-border-wave 6s linear infinite;
+  mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 8 120'%3E%3Cpath d='M4 0 Q8 15 4 30 Q0 45 4 60 Q8 75 4 90 Q0 105 4 120' stroke='white' stroke-width='8' fill='none'/%3E%3C/svg%3E");
+  mask-repeat: repeat-y;
+  mask-size: 8px 120px;
+  -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 8 120'%3E%3Cpath d='M4 0 Q8 15 4 30 Q0 45 4 60 Q8 75 4 90 Q0 105 4 120' stroke='white' stroke-width='8' fill='none'/%3E%3C/svg%3E");
+  -webkit-mask-repeat: repeat-y;
+  -webkit-mask-size: 8px 120px;
+  pointer-events: none;
+}
+
+.gs-home-wave-left {
+  left: 12px;
+}
+
+.gs-home-wave-right {
+  right: 12px;
+  animation-direction: reverse;
+}
+
+.gs-home-title-block,
+.gs-home-elo-badge,
+.gs-home-globe-stage,
+.gs-home-footer {
+  opacity: 0;
+}
+
+.gs-home-screen.is-loaded .gs-home-title-block {
+  animation: gs-home-title-reveal 0.85s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+}
+
+.gs-home-screen.is-loaded .gs-home-elo-badge {
+  animation: gs-home-slide-up 0.6s 0.18s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards, gs-home-pulse-glow 3s 1s ease-in-out infinite;
+}
+
+.gs-home-screen.is-loaded .gs-home-globe-stage {
+  animation: gs-home-scale-in 0.9s 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards, gs-home-float 8s 1.3s ease-in-out infinite;
+}
+
+.gs-home-screen.is-loaded .gs-home-footer {
+  animation: gs-home-slide-up 0.7s 0.55s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+}
+
+.gs-home-kicker {
+  margin: 0 0 10px;
+  font-family: "Outfit", sans-serif;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.32em;
+  text-transform: uppercase;
+  color: rgba(232, 244, 234, 0.62);
+}
+
+.gs-home-title {
+  margin: 0;
+  font-family: "Dela Gothic One", "Aeonik TRIAL", sans-serif;
+  font-size: clamp(2.75rem, 9vw, 4.4rem);
+  line-height: 0.96;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: transparent;
+  background: linear-gradient(135deg, #2ecc71 0%, #3498db 50%, #2ecc71 100%);
+  background-clip: text;
+  -webkit-background-clip: text;
+  filter: drop-shadow(0 0 24px rgba(46, 204, 113, 0.22));
+}
+
+.gs-home-elo-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 22px;
+  border-radius: 999px;
+  border: 1px solid rgba(46, 204, 113, 0.22);
+  background: linear-gradient(135deg, rgba(13, 31, 60, 0.88), rgba(6, 20, 40, 0.92));
+  box-shadow: 0 0 20px rgba(46, 204, 113, 0.12);
+  font-family: "Outfit", sans-serif;
+}
+
+.gs-home-elo-label {
+  font-size: 0.84rem;
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.gs-home-elo-badge strong {
+  font-size: 1.45rem;
+  color: #e9fff2;
+}
+
+.gs-home-globe-stage {
+  position: relative;
+  width: min(360px, 86vw);
+  aspect-ratio: 1;
+}
+
+.gs-home-globe-stage::before {
+  content: "";
+  position: absolute;
+  inset: 14%;
+  border-radius: 999px;
+  background: radial-gradient(circle, rgba(52, 152, 219, 0.24), transparent 68%);
+  filter: blur(26px);
+}
+
+.gs-home-globe-rotor {
+  position: absolute;
+  inset: 0;
+  animation: gs-home-globe-spin 42s linear infinite;
+}
+
+.gs-home-globe-svg {
+  width: 100%;
+  height: 100%;
+}
+
+.gs-home-mode-stack {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  padding: 32px;
+}
+
+.gs-home-mode-button {
+  position: relative;
+  width: min(260px, 100%);
+  padding: 16px 22px;
+  border: 1px solid rgba(46, 204, 113, 0.26);
+  border-radius: 16px;
+  background: linear-gradient(135deg, rgba(13, 31, 60, 0.9), rgba(6, 20, 40, 0.96));
+  color: #e8f4ea;
+  font-family: "Outfit", sans-serif;
+  font-size: 0.95rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  overflow: hidden;
+  backdrop-filter: blur(12px);
+  transition:
+    border-color 180ms ease,
+    transform 180ms ease,
+    box-shadow 180ms ease,
+    background 180ms ease;
+}
+
+.gs-home-mode-button::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 16px;
+  background: linear-gradient(135deg, rgba(46, 204, 113, 0.1), transparent 60%);
+  opacity: 0;
+  transition: opacity 180ms ease;
+}
+
+.gs-home-mode-button:hover,
+.gs-home-mode-button:focus-visible {
+  transform: translateY(-3px) scale(1.02);
+  border-color: rgba(46, 204, 113, 0.58);
+  box-shadow: 0 12px 38px rgba(46, 204, 113, 0.18), 0 0 50px rgba(46, 204, 113, 0.08);
+}
+
+.gs-home-mode-button:hover::before,
+.gs-home-mode-button:focus-visible::before {
+  opacity: 1;
+}
+
+.gs-home-mode-button.disabled,
+.gs-home-mode-button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  border-color: rgba(255, 255, 255, 0.08);
+  box-shadow: none;
+  transform: none;
+}
+
+.gs-home-mode-button.disabled::before,
+.gs-home-mode-button:disabled::before {
+  opacity: 0;
+}
+
+.gs-home-mode-row,
+.gs-home-mode-desc {
+  position: relative;
+  z-index: 1;
+}
+
+.gs-home-mode-row {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
+
+.gs-home-mode-desc {
+  display: block;
+  margin-top: 6px;
+  font-size: 0.68rem;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  text-transform: none;
+  color: rgba(255, 255, 255, 0.56);
+}
+
+.gs-home-footer {
+  margin: 8px 0 0;
+  font-family: "Outfit", sans-serif;
+  font-size: 0.78rem;
+  letter-spacing: 0.34em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.3);
+}
+
+@keyframes gs-home-twinkle {
+  0% {
+    opacity: 0.15;
+  }
+
+  100% {
+    opacity: 0.82;
+  }
+}
+
+@keyframes gs-home-float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+
+  50% {
+    transform: translateY(-12px);
+  }
+}
+
+@keyframes gs-home-pulse-glow {
+  0%,
+  100% {
+    box-shadow: 0 0 20px rgba(46, 204, 113, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  }
+
+  50% {
+    box-shadow: 0 0 32px rgba(52, 152, 219, 0.16), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  }
+}
+
+@keyframes gs-home-slide-up {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes gs-home-scale-in {
+  from {
+    opacity: 0;
+    transform: scale(0.85);
+  }
+
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes gs-home-title-reveal {
+  from {
+    opacity: 0;
+    transform: translateY(-20px) scale(0.95);
+    letter-spacing: 0.2em;
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    letter-spacing: 0.08em;
+  }
+}
+
+@keyframes gs-home-border-wave {
+  0% {
+    background-position: 0 0;
+  }
+
+  100% {
+    background-position: 0 200%;
+  }
+}
+
+@keyframes gs-home-globe-spin {
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.gs-app-actions {
+  position: relative;
+  z-index: 5;
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 10px;
+}
+
+.gs-utility-menu-trigger {
+  position: relative;
+  z-index: 6;
+  width: 48px;
+  height: 48px;
+  padding: 0;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.88);
+  backdrop-filter: blur(14px);
+}
+
+.gs-utility-menu-scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 4;
+  appearance: none;
+  border: none;
+  background: transparent;
+}
+
+.gs-utility-menu {
+  position: absolute;
+  top: calc(100% + 10px);
+  right: 0;
+  z-index: 6;
+  display: grid;
+  gap: 8px;
+  min-width: 188px;
+  padding: 10px;
+  border-radius: 24px;
+  border: 1px solid var(--gs-border);
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow: var(--gs-shadow-strong);
+  backdrop-filter: blur(18px);
+}
+
+.gs-utility-menu-button {
+  appearance: none;
+  border: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 12px 14px;
+  border-radius: 16px;
+  background: rgba(236, 238, 234, 0.84);
+  color: var(--gs-ink);
+  font-weight: 700;
+  text-align: left;
+  transition:
+    background 160ms ease,
+    transform 160ms ease;
+}
+
+.gs-utility-menu-button:hover {
+  transform: translateY(-1px);
+  background: rgba(159, 232, 112, 0.24);
+}
+
+.gs-utility-menu-button.danger {
+  color: #a63b2d;
+  background: rgba(255, 112, 88, 0.12);
 }
 
 .gs-topbar {

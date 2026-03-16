@@ -2,6 +2,7 @@ import {
   COUNTRY_CENTROIDS,
   COUNTRY_SEARCH_KEYWORDS
 } from "../data/confusionPools";
+import { CITY_BY_COUNTRY } from "../data/geoCatalog";
 import type { GeoRound, RoundMedia } from "../types/game";
 
 const GOOGLE_KEY = (import.meta as ImportMeta & { env?: Record<string, string | undefined> }).env
@@ -206,6 +207,70 @@ async function buildGoogleStreetViewMedia(country: string, variantKey: string): 
   };
 }
 
+async function fetchStreetViewFromCoordinates(coords: [number, number], variantKey: string): Promise<RoundMedia | null> {
+  if (!GOOGLE_KEY) {
+    return null;
+  }
+
+  const cacheKey = `streetview:coords:${coords[0]},${coords[1]}:${variantKey}`;
+  const cached = streetViewMetadataCache.get(cacheKey);
+  if (cached) {
+    const metadata = await cached;
+    if (!metadata?.pano_id) {
+      return null;
+    }
+    const pov = deriveStreetViewPov(variantKey);
+    return {
+      kind: "streetview",
+      sceneKey: `coords:${variantKey}`,
+      panoId: metadata.pano_id,
+      previewUrl: buildGoogleStreetViewPreviewUrl(metadata.pano_id, pov.heading, pov.pitch),
+      heading: pov.heading,
+      pitch: pov.pitch,
+      zoom: pov.zoom
+    };
+  }
+
+  const candidates = STREET_VIEW_OFFSETS.map(([latOff, lngOff]) =>
+    [normalizeCoordinate(coords[0] + latOff), normalizeCoordinate(coords[1] + lngOff)] as [number, number]
+  );
+
+  const request = (async () => {
+    for (const candidate of candidates) {
+      try {
+        const response = await fetch(buildGoogleStreetViewMetadataUrl(candidate));
+        if (!response.ok) {
+          continue;
+        }
+        const payload = (await response.json()) as GoogleStreetViewMetadata;
+        if (payload.status === "OK" && payload.pano_id) {
+          return payload;
+        }
+      } catch {
+        continue;
+      }
+    }
+    return null;
+  })();
+
+  streetViewMetadataCache.set(cacheKey, request);
+  const metadata = await request;
+  if (!metadata?.pano_id) {
+    return null;
+  }
+
+  const pov = deriveStreetViewPov(variantKey);
+  return {
+    kind: "streetview",
+    sceneKey: `coords:${variantKey}`,
+    panoId: metadata.pano_id,
+    previewUrl: buildGoogleStreetViewPreviewUrl(metadata.pano_id, pov.heading, pov.pitch),
+    heading: pov.heading,
+    pitch: pov.pitch,
+    zoom: pov.zoom
+  };
+}
+
 async function fetchWikimediaImages(searchTerms: string[], limit: number): Promise<string[]> {
   const cacheKey = `commons:${searchTerms.join("|")}:${limit}`;
   if (commonsCache.has(cacheKey)) {
@@ -259,18 +324,32 @@ export function getRoundMediaPreviewUrl(media: RoundMedia): string {
 }
 
 export async function getRoundMedia(round: GeoRound): Promise<RoundMedia> {
-  const country = round.correctAnswer;
-  const googleMedia = await buildGoogleStreetViewMedia(country, round.id);
-  if (googleMedia) {
-    return googleMedia;
+  const country = round.mediaCountry;
+  const catalogEntry = CITY_BY_COUNTRY[country];
+
+  // 1. City coordinates from the round (city mode)
+  if (round.cityCoordinates) {
+    const media = await fetchStreetViewFromCoordinates(round.cityCoordinates, round.id);
+    if (media) return media;
   }
 
+  // 2. Catalog coordinates — every country in the catalog has these
+  if (catalogEntry) {
+    const media = await fetchStreetViewFromCoordinates(catalogEntry.coordinates, round.id);
+    if (media) return media;
+  }
+
+  // 3. Legacy anchors/centroids (for any countries in confusionPools but not catalog)
+  const googleMedia = await buildGoogleStreetViewMedia(country, round.id);
+  if (googleMedia) return googleMedia;
+
+  // 4. Wikimedia Commons — real photos of the country
   const queryTerms = [
     country,
-    ...(COUNTRY_SEARCH_KEYWORDS[country] ?? [country, "street", "city"]),
+    ...(COUNTRY_SEARCH_KEYWORDS[country] ?? catalogEntry?.searchTerms ?? [country, "street", "city"]),
     ...round.pair.contextSearchTerms.slice(0, 2)
   ];
-  const wikimediaImages = await fetchWikimediaImages(queryTerms, 4);
+  const wikimediaImages = await fetchWikimediaImages(queryTerms, 6);
   if (wikimediaImages.length > 0) {
     return {
       kind: "image",
@@ -278,6 +357,7 @@ export async function getRoundMedia(round: GeoRound): Promise<RoundMedia> {
     };
   }
 
+  // 5. Last resort
   return {
     kind: "image",
     url: buildGenericPhotoFallback(country, round.pair.visualTags[0] ?? "landscape", round.roundNumber)
@@ -288,8 +368,45 @@ export async function getRoundImageUrl(round: GeoRound): Promise<string> {
   return getRoundMediaPreviewUrl(await getRoundMedia(round));
 }
 
+// ── Preloading ────────────────────────────────────────────────────
+
+const preloadCache = new Map<string, Promise<RoundMedia>>();
+
+/**
+ * Preload media for upcoming rounds. Call this with the next N rounds
+ * while the player is on the current card. Results are cached so
+ * `getRoundMedia` returns instantly when the round becomes active.
+ */
+export function preloadRoundMedia(rounds: GeoRound[]): void {
+  for (const round of rounds) {
+    if (preloadCache.has(round.id)) continue;
+    const promise = getRoundMedia(round);
+    preloadCache.set(round.id, promise);
+
+    // Also preload the preview image into browser cache
+    promise.then((media) => {
+      const url = getRoundMediaPreviewUrl(media);
+      if (url) {
+        const img = new Image();
+        img.src = url;
+      }
+    }).catch(() => {});
+  }
+}
+
+/**
+ * Get preloaded media if available, otherwise fetch fresh.
+ */
+export async function getPreloadedRoundMedia(round: GeoRound): Promise<RoundMedia> {
+  const cached = preloadCache.get(round.id);
+  if (cached) return cached;
+  const promise = getRoundMedia(round);
+  preloadCache.set(round.id, promise);
+  return promise;
+}
+
 export async function getBreakContextImages(round: GeoRound): Promise<string[]> {
-  const country = round.correctAnswer;
+  const country = round.mediaCountry;
   const queryTerms = [
     country,
     ...(COUNTRY_SEARCH_KEYWORDS[country] ?? [country, "street", "city"]),

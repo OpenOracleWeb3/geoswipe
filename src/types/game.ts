@@ -1,7 +1,8 @@
 export type DifficultyBand = "easy" | "medium" | "hard";
 export type DifficultyTier = DifficultyBand;
 export type SwipeDirection = "left" | "right";
-export type GameMode = "continent" | "world_region" | "country";
+export type CategoryMode = "continents" | "countries" | "cities" | "worldwide";
+export type GameMode = "continent" | "world_region" | "country" | "city";
 export type RegionStage = "americas" | "europe" | "africa_middle_east" | "asia_oceania";
 export type RoundModifier = "none" | "rival_surge" | "high_value" | "speed_round";
 export type GamePhase = "stage_intro" | "round_active" | "round_result" | "reassess_break" | "run_complete";
@@ -95,6 +96,8 @@ export interface GeoRound {
   decoyAnswer: string;
   correctDirection: SwipeDirection;
   sceneKey: string;
+  mediaCountry: string;
+  cityCoordinates?: [number, number];
 }
 
 export interface StaticRoundMedia {
@@ -191,6 +194,7 @@ export interface BreakContextPayload {
 }
 
 export interface GameSessionPlan {
+  category: CategoryMode;
   mode: GameMode;
   queueId: string;
   packId: string;

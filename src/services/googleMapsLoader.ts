@@ -1,20 +1,15 @@
-interface GoogleMapsNamespace {
-  maps: typeof google.maps;
-}
-
-declare global {
-  interface Window {
-    google?: GoogleMapsNamespace;
-  }
-}
-
-type GoogleMapsApi = GoogleMapsNamespace;
+type GoogleMapsApi = typeof google;
+type GoogleMapsWindow = Window & typeof globalThis & { google?: GoogleMapsApi };
 
 const GOOGLE_MAPS_SCRIPT_ID = "geoswipe-google-maps-js";
 const GOOGLE_MAPS_KEY = (import.meta as ImportMeta & { env?: Record<string, string | undefined> }).env
   ?.VITE_GOOGLE_STREET_VIEW_API_KEY;
 
 let googleMapsPromise: Promise<GoogleMapsApi> | null = null;
+
+function getGoogleMapsWindow(): GoogleMapsWindow {
+  return window as GoogleMapsWindow;
+}
 
 function buildGoogleMapsScriptUrl(apiKey: string): string {
   const url = new URL("https://maps.googleapis.com/maps/api/js");
@@ -29,8 +24,10 @@ export function loadGoogleMapsApi(): Promise<GoogleMapsApi> {
     return Promise.reject(new Error("Google Maps is only available in the browser."));
   }
 
-  if (window.google?.maps) {
-    return Promise.resolve(window.google);
+  const googleWindow = getGoogleMapsWindow();
+
+  if (googleWindow.google?.maps) {
+    return Promise.resolve(googleWindow.google);
   }
 
   if (!GOOGLE_MAPS_KEY) {
@@ -43,8 +40,9 @@ export function loadGoogleMapsApi(): Promise<GoogleMapsApi> {
 
   googleMapsPromise = new Promise<GoogleMapsApi>((resolve, reject) => {
     const completeLoad = () => {
-      if (window.google?.maps) {
-        resolve(window.google);
+      const loadedWindow = getGoogleMapsWindow();
+      if (loadedWindow.google?.maps) {
+        resolve(loadedWindow.google);
         return;
       }
 

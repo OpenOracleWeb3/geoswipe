@@ -1,6 +1,6 @@
 import { createPackSessionSeed, createSessionRounds } from "./difficultyEngine";
 import { createRivalPlan } from "./rivalEngine";
-import type { DifficultyBand, GameMode, GamePhase, GameSessionPlan, RoundOutcome, SessionSummary } from "../types/game";
+import type { CategoryMode, DifficultyBand, GameMode, GamePhase, GameSessionPlan, RoundOutcome, SessionSummary } from "../types/game";
 
 interface SessionSummaryInput {
   rounds: GameSessionPlan["rounds"];
@@ -15,13 +15,23 @@ function createPackId(): string {
   return String(Math.floor(Math.random() * 384) + 1).padStart(3, "0");
 }
 
-export function createGameSession(startedAt: Date, mode: GameMode = "continent", packId = createPackId()): GameSessionPlan {
-  const seed = `${createPackSessionSeed(startedAt, packId)}:${mode}`;
-  const rounds = createSessionRounds(startedAt, mode, packId);
+function categoryToPrimaryMode(category: CategoryMode): GameMode {
+  switch (category) {
+    case "continents": return "continent";
+    case "countries": return "country";
+    case "cities": return "city";
+    case "worldwide": return "country";
+  }
+}
+
+export function createGameSession(startedAt: Date, category: CategoryMode = "countries", packId = createPackId()): GameSessionPlan {
+  const seed = `${createPackSessionSeed(startedAt, packId)}:${category}`;
+  const rounds = createSessionRounds(startedAt, category, packId);
   const rivalPlan = createRivalPlan(rounds, seed);
 
   return {
-    mode,
+    category,
+    mode: categoryToPrimaryMode(category),
     queueId: packId,
     packId,
     seed,
@@ -55,7 +65,7 @@ export function buildSessionSummary({
     { easy: 0, medium: 0, hard: 0 }
   );
 
-  const uniqueCountries = new Set(rounds.map((round) => round.correctAnswer)).size;
+  const uniqueCountries = new Set(rounds.map((round) => round.mediaCountry)).size;
   const uniqueWorldRegions = new Set(rounds.map((round) => round.location.worldRegionId)).size;
   const uniqueContinents = new Set(rounds.map((round) => round.location.continentId)).size;
 
