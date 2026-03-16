@@ -326,57 +326,40 @@ export function getRoundMediaPreviewUrl(media: RoundMedia): string {
 export async function getRoundMedia(round: GeoRound): Promise<RoundMedia> {
   const country = round.mediaCountry;
   const catalogEntry = CITY_BY_COUNTRY[country];
+  const coords = round.cityCoordinates ?? catalogEntry?.coordinates;
 
-  // 1. City coordinates from the round (city mode)
-  if (round.cityCoordinates) {
-    const media = await fetchStreetViewFromCoordinates(round.cityCoordinates, round.id);
-    if (media) return media;
-  }
+  // Try all coordinate sources to get a real pano ID
+  const attempts: Array<[number, number]> = [];
+  if (coords) attempts.push(coords);
+  if (catalogEntry && coords !== catalogEntry.coordinates) attempts.push(catalogEntry.coordinates);
 
-  // 2. Catalog coordinates — every Street View country has these
-  if (catalogEntry) {
-    const media = await fetchStreetViewFromCoordinates(catalogEntry.coordinates, round.id);
-    if (media) return media;
-  }
-
-  // 3. Legacy anchors/centroids
-  const googleMedia = await buildGoogleStreetViewMedia(country, round.id);
-  if (googleMedia) return googleMedia;
-
-  // 4. Try wider offsets from catalog coordinates
-  if (catalogEntry) {
-    for (let attempt = 1; attempt <= 3; attempt++) {
-      const media = await fetchStreetViewFromCoordinates(
-        [catalogEntry.coordinates[0] + attempt * 0.03, catalogEntry.coordinates[1] + attempt * 0.03],
-        `${round.id}:retry${attempt}`
-      );
-      if (media) return media;
+  // Add offset variants
+  if (coords) {
+    for (const [dLat, dLng] of STREET_VIEW_OFFSETS.slice(0, 6)) {
+      attempts.push([coords[0] + dLat, coords[1] + dLng]);
     }
   }
 
-  // 5. Build a Street View static image URL directly from coordinates as absolute last resort
-  // This uses the Static API which returns a JPEG even without a pano ID
-  if (catalogEntry && GOOGLE_KEY) {
-    const [lat, lng] = catalogEntry.coordinates;
-    return {
-      kind: "streetview",
-      sceneKey: `direct:${country}:${round.id}`,
-      panoId: "",
-      previewUrl: `https://maps.googleapis.com/maps/api/streetview?size=640x360&scale=2&location=${lat},${lng}&fov=90&heading=${hashString(round.id) % 360}&pitch=5&return_error_code=false&key=${GOOGLE_KEY}`,
-      heading: hashString(round.id) % 360,
-      pitch: 5,
-      zoom: 1
-    };
+  for (const attempt of attempts) {
+    const media = await fetchStreetViewFromCoordinates(attempt, round.id);
+    if (media) return media;
   }
 
-  // Should never reach here — all pairs are filtered to streetView: true countries
+  // Legacy anchors/centroids as last coordinate source
+  const googleMedia = await buildGoogleStreetViewMedia(country, round.id);
+  if (googleMedia) return googleMedia;
+
+  // Absolute last resort — use the Static API with coordinates directly.
+  // This always returns a Street View JPEG (Google picks nearest coverage).
+  const fallbackCoords = coords ?? [0, 0];
+  const heading = hashString(round.id) % 360;
   return {
     kind: "streetview",
-    sceneKey: `fallback:${round.id}`,
+    sceneKey: `direct:${country}:${round.id}`,
     panoId: "",
-    previewUrl: `https://maps.googleapis.com/maps/api/streetview?size=640x360&location=0,0&key=${GOOGLE_KEY}`,
-    heading: 0,
-    pitch: 0,
+    previewUrl: `https://maps.googleapis.com/maps/api/streetview?size=640x360&scale=2&location=${fallbackCoords[0]},${fallbackCoords[1]}&fov=90&heading=${heading}&pitch=5&source=outdoor&key=${GOOGLE_KEY}`,
+    heading,
+    pitch: 5,
     zoom: 1
   };
 }

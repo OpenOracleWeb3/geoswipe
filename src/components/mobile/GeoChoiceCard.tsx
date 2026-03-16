@@ -225,15 +225,7 @@ export function GeoChoiceCard({
               </div>
             ) : media?.kind === "streetview" ? (
               <StreetViewPanorama media={media} alt="Geography challenge" interactive={exploreMode} />
-            ) : media?.kind === "image" ? (
-              <img src={media.url} alt="Geography challenge" className="gs-round-image" />
-            ) : (
-              <div className="gs-image-loading">
-                <CircleHelp size={18} />
-                <strong>Image unavailable</strong>
-                <span>Skip this read if the scene never appears.</span>
-              </div>
-            )}
+            ) : null}
 
             {/* Street View explore button — centered */}
             {isStreetView && !exploreMode && !resultOutcome ? (
