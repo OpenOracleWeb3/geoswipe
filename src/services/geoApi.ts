@@ -70,6 +70,27 @@ interface GoogleStreetViewMetadata {
   pano_id?: string;
 }
 
+export interface StreetViewPullAttempt {
+  index: number;
+  source: "round_coords" | "catalog_coords";
+  coordinates: [number, number];
+  metadataStatus: string;
+  panoId: string | null;
+  selected: boolean;
+}
+
+export interface StreetViewPullTrace {
+  country: string;
+  roundId: string;
+  requestedCoordinates: [number, number] | null;
+  catalogCoordinates: [number, number] | null;
+  resolvedCoordinates: [number, number] | null;
+  resolvedPanoId: string | null;
+  resolution: "pano" | "location_fallback" | "missing_input";
+  attempts: StreetViewPullAttempt[];
+  previewUrl: string | null;
+}
+
 const STREET_VIEW_OFFSETS: Array<[number, number]> = [
   [0, 0],
   [0.012, 0.012],
@@ -103,6 +124,12 @@ function normalizeCoordinate(value: number): number {
 
 function buildGoogleStreetViewMetadataUrl([lat, lng]: [number, number]): string {
   return `https://maps.googleapis.com/maps/api/streetview/metadata?location=${lat},${lng}&key=${GOOGLE_KEY}`;
+}
+
+function getCoordinateCandidates(coords: [number, number]): Array<[number, number]> {
+  return STREET_VIEW_OFFSETS.map(([latOff, lngOff]) =>
+    [normalizeCoordinate(coords[0] + latOff), normalizeCoordinate(coords[1] + lngOff)] as [number, number]
+  );
 }
 
 function getStreetViewCandidateLocations(country: string, variantKey: string): Array<[number, number]> {
@@ -200,6 +227,7 @@ async function buildGoogleStreetViewMedia(country: string, variantKey: string): 
     kind: "streetview",
     sceneKey: getStreetViewVariantKey(country, variantKey),
     panoId: metadata.pano_id,
+    coordinates: undefined,
     previewUrl: buildGoogleStreetViewPreviewUrl(metadata.pano_id, pov.heading, pov.pitch),
     heading: pov.heading,
     pitch: pov.pitch,
@@ -224,6 +252,7 @@ async function fetchStreetViewFromCoordinates(coords: [number, number], variantK
       kind: "streetview",
       sceneKey: `coords:${variantKey}`,
       panoId: metadata.pano_id,
+      coordinates: coords,
       previewUrl: buildGoogleStreetViewPreviewUrl(metadata.pano_id, pov.heading, pov.pitch),
       heading: pov.heading,
       pitch: pov.pitch,
@@ -231,9 +260,7 @@ async function fetchStreetViewFromCoordinates(coords: [number, number], variantK
     };
   }
 
-  const candidates = STREET_VIEW_OFFSETS.map(([latOff, lngOff]) =>
-    [normalizeCoordinate(coords[0] + latOff), normalizeCoordinate(coords[1] + lngOff)] as [number, number]
-  );
+  const candidates = getCoordinateCandidates(coords);
 
   const request = (async () => {
     for (const candidate of candidates) {
@@ -264,11 +291,60 @@ async function fetchStreetViewFromCoordinates(coords: [number, number], variantK
     kind: "streetview",
     sceneKey: `coords:${variantKey}`,
     panoId: metadata.pano_id,
+    coordinates: coords,
     previewUrl: buildGoogleStreetViewPreviewUrl(metadata.pano_id, pov.heading, pov.pitch),
     heading: pov.heading,
     pitch: pov.pitch,
     zoom: pov.zoom
   };
+}
+
+async function probeStreetViewCandidates(
+  coords: [number, number],
+  source: StreetViewPullAttempt["source"]
+): Promise<{
+  attempts: StreetViewPullAttempt[];
+  selectedCoordinates: [number, number] | null;
+  metadata: GoogleStreetViewMetadata | null;
+}> {
+  const candidates = getCoordinateCandidates(coords);
+  const attempts: StreetViewPullAttempt[] = [];
+  let selectedCoordinates: [number, number] | null = null;
+  let metadata: GoogleStreetViewMetadata | null = null;
+
+  for (let index = 0; index < candidates.length; index += 1) {
+    const candidate = candidates[index];
+    let payload: GoogleStreetViewMetadata | null = null;
+
+    try {
+      const response = await fetch(buildGoogleStreetViewMetadataUrl(candidate));
+      if (response.ok) {
+        payload = (await response.json()) as GoogleStreetViewMetadata;
+      } else {
+        payload = { status: `HTTP_${response.status}` };
+      }
+    } catch {
+      payload = { status: "FETCH_ERROR" };
+    }
+
+    const hit = payload?.status === "OK" && Boolean(payload.pano_id);
+    attempts.push({
+      index: attempts.length,
+      source,
+      coordinates: candidate,
+      metadataStatus: payload?.status ?? "UNKNOWN",
+      panoId: payload?.pano_id ?? null,
+      selected: hit
+    });
+
+    if (hit) {
+      selectedCoordinates = candidate;
+      metadata = payload;
+      break;
+    }
+  }
+
+  return { attempts, selectedCoordinates, metadata };
 }
 
 async function fetchWikimediaImages(searchTerms: string[], limit: number): Promise<string[]> {
@@ -335,6 +411,7 @@ export async function getRoundMedia(round: GeoRound): Promise<RoundMedia> {
       kind: "streetview",
       sceneKey: `nocoords:${round.id}`,
       panoId: "",
+      coordinates: undefined,
       previewUrl: `https://maps.googleapis.com/maps/api/streetview?size=640x360&scale=2&location=48.8566,2.3522&heading=${heading}&pitch=5&key=${GOOGLE_KEY}`,
       heading, pitch: 5, zoom: 1
     };
@@ -357,6 +434,7 @@ export async function getRoundMedia(round: GeoRound): Promise<RoundMedia> {
     kind: "streetview",
     sceneKey: `loc:${country}:${round.id}`,
     panoId: "",
+    coordinates: coords,
     previewUrl: `https://maps.googleapis.com/maps/api/streetview?size=640x360&scale=2&location=${coords[0]},${coords[1]}&fov=90&heading=${heading}&pitch=5&source=outdoor&key=${GOOGLE_KEY}`,
     heading,
     pitch: 5,
@@ -366,6 +444,93 @@ export async function getRoundMedia(round: GeoRound): Promise<RoundMedia> {
 
 export async function getRoundImageUrl(round: GeoRound): Promise<string> {
   return getRoundMediaPreviewUrl(await getRoundMedia(round));
+}
+
+export async function traceRoundStreetViewPull(round: GeoRound): Promise<StreetViewPullTrace> {
+  const country = round.mediaCountry;
+  const catalogEntry = CITY_BY_COUNTRY[country];
+  const requestedCoordinates = round.cityCoordinates ?? catalogEntry?.coordinates ?? null;
+  const catalogCoordinates = catalogEntry?.coordinates ?? null;
+
+  if (!requestedCoordinates || !GOOGLE_KEY) {
+    const heading = hashString(round.id) % 360;
+    return {
+      country,
+      roundId: round.id,
+      requestedCoordinates,
+      catalogCoordinates,
+      resolvedCoordinates: requestedCoordinates,
+      resolvedPanoId: null,
+      resolution: "missing_input",
+      attempts: [],
+      previewUrl: `https://maps.googleapis.com/maps/api/streetview?size=640x360&scale=2&location=48.8566,2.3522&heading=${heading}&pitch=5&key=${GOOGLE_KEY}`
+    };
+  }
+
+  const primaryProbe = await probeStreetViewCandidates(requestedCoordinates, "round_coords");
+  if (primaryProbe.metadata?.pano_id) {
+    const pov = deriveStreetViewPov(round.id);
+    return {
+      country,
+      roundId: round.id,
+      requestedCoordinates,
+      catalogCoordinates,
+      resolvedCoordinates: primaryProbe.selectedCoordinates,
+      resolvedPanoId: primaryProbe.metadata.pano_id,
+      resolution: "pano",
+      attempts: primaryProbe.attempts,
+      previewUrl: buildGoogleStreetViewPreviewUrl(primaryProbe.metadata.pano_id, pov.heading, pov.pitch)
+    };
+  }
+
+  if (
+    catalogCoordinates &&
+    (!round.cityCoordinates ||
+      catalogCoordinates[0] !== requestedCoordinates[0] ||
+      catalogCoordinates[1] !== requestedCoordinates[1])
+  ) {
+    const fallbackProbe = await probeStreetViewCandidates(catalogCoordinates, "catalog_coords");
+    if (fallbackProbe.metadata?.pano_id) {
+      const pov = deriveStreetViewPov(round.id);
+      return {
+        country,
+        roundId: round.id,
+        requestedCoordinates,
+        catalogCoordinates,
+        resolvedCoordinates: fallbackProbe.selectedCoordinates,
+        resolvedPanoId: fallbackProbe.metadata.pano_id,
+        resolution: "pano",
+        attempts: [...primaryProbe.attempts, ...fallbackProbe.attempts],
+        previewUrl: buildGoogleStreetViewPreviewUrl(fallbackProbe.metadata.pano_id, pov.heading, pov.pitch)
+      };
+    }
+
+    const heading = hashString(round.id) % 360;
+    return {
+      country,
+      roundId: round.id,
+      requestedCoordinates,
+      catalogCoordinates,
+      resolvedCoordinates: requestedCoordinates,
+      resolvedPanoId: null,
+      resolution: "location_fallback",
+      attempts: [...primaryProbe.attempts, ...fallbackProbe.attempts],
+      previewUrl: `https://maps.googleapis.com/maps/api/streetview?size=640x360&scale=2&location=${requestedCoordinates[0]},${requestedCoordinates[1]}&fov=90&heading=${heading}&pitch=5&source=outdoor&key=${GOOGLE_KEY}`
+    };
+  }
+
+  const heading = hashString(round.id) % 360;
+  return {
+    country,
+    roundId: round.id,
+    requestedCoordinates,
+    catalogCoordinates,
+    resolvedCoordinates: requestedCoordinates,
+    resolvedPanoId: null,
+    resolution: "location_fallback",
+    attempts: primaryProbe.attempts,
+    previewUrl: `https://maps.googleapis.com/maps/api/streetview?size=640x360&scale=2&location=${requestedCoordinates[0]},${requestedCoordinates[1]}&fov=90&heading=${heading}&pitch=5&source=outdoor&key=${GOOGLE_KEY}`
+  };
 }
 
 // ── Preloading ────────────────────────────────────────────────────

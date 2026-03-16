@@ -239,6 +239,7 @@ function GeoSwipeApp() {
             kind: "streetview" as const,
             sceneKey: `emergency:${currentRound.id}`,
             panoId: "",
+            coordinates: coords,
             previewUrl: `https://maps.googleapis.com/maps/api/streetview?size=640x360&scale=2&location=${coords[0]},${coords[1]}&heading=${heading}&pitch=5&source=outdoor&key=${import.meta.env?.VITE_GOOGLE_STREET_VIEW_API_KEY ?? ""}`,
             heading,
             pitch: 5,

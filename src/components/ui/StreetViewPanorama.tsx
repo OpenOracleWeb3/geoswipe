@@ -37,8 +37,8 @@ export function StreetViewPanorama({ media, alt, interactive }: StreetViewPanora
     setTilesLoaded(false);
     setFailed(false);
 
-    // Don't attempt interactive pano if there's no valid pano ID
-    if (!media.panoId) {
+    // No pano ID and no coordinates means preview-only.
+    if (!media.panoId && !media.coordinates) {
       setFailed(true);
       return;
     }
@@ -49,7 +49,8 @@ export function StreetViewPanorama({ media, alt, interactive }: StreetViewPanora
 
         const panorama = new googleMaps.maps.StreetViewPanorama(containerRef.current, {
           ...PANORAMA_OPTIONS,
-          pano: media.panoId,
+          ...(media.panoId ? { pano: media.panoId } : {}),
+          ...(media.coordinates ? { position: { lat: media.coordinates[0], lng: media.coordinates[1] } } : {}),
           pov: { heading: media.heading, pitch: media.pitch },
           zoom: media.zoom
         });
@@ -89,7 +90,7 @@ export function StreetViewPanorama({ media, alt, interactive }: StreetViewPanora
       }
       panoramaRef.current = null;
     };
-  }, [media.panoId, media.heading, media.pitch, media.zoom]);
+  }, [media.coordinates, media.panoId, media.heading, media.pitch, media.zoom]);
 
   // Show the pano canvas when: user toggled interactive AND tiles loaded AND not failed
   const showPano = interactive && tilesLoaded && !failed;

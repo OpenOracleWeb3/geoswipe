@@ -4,6 +4,7 @@ import { useRef, useState, type CSSProperties } from "react";
 import { getCountryFlagUrl } from "../../data/countryFlags";
 import type { GeoRound, RoundMedia, RoundOutcome, SwipeDirection } from "../../types/game";
 import { StreetViewPanorama } from "../ui/StreetViewPanorama";
+import { StreetViewPullMap } from "../ui/StreetViewPullMap";
 
 interface GeoChoiceCardProps {
   round: GeoRound;
@@ -44,6 +45,7 @@ export function GeoChoiceCard({
 }: GeoChoiceCardProps) {
   const [swipeDirection, setSwipeDirection] = useState<SwipeDirection | null>(null);
   const [exploreMode, setExploreMode] = useState(false);
+  const [showPullMap, setShowPullMap] = useState(false);
   const swipeDirectionRef = useRef<SwipeDirection | null>(null);
   const isStreetView = media?.kind === "streetview" && Boolean(media.panoId);
 
@@ -228,36 +230,73 @@ export function GeoChoiceCard({
             ) : null}
 
             {/* Street View explore button — centered */}
-            {isStreetView && !exploreMode && !resultOutcome ? (
-              <button
-                type="button"
-                onClick={() => setExploreMode(true)}
+            {isStreetView && !resultOutcome ? (
+              <div
                 style={{
                   position: "absolute",
-                  top: "50%",
-                  left: "50%",
-                  transform: "translate(-50%, -50%)",
+                  left: 12,
+                  right: 12,
+                  bottom: 12,
                   zIndex: 15,
                   display: "flex",
-                  alignItems: "center",
-                  gap: 6,
-                  padding: "10px 20px",
-                  borderRadius: 24,
-                  border: "1px solid rgba(255,255,255,0.3)",
-                  background: "rgba(0,0,0,0.6)",
-                  color: "#fff",
-                  fontSize: 14,
-                  fontWeight: 600,
-                  cursor: "pointer",
-                  backdropFilter: "blur(10px)",
-                  letterSpacing: 0.8,
-                  fontFamily: "'Outfit', sans-serif",
-                  boxShadow: "0 4px 20px rgba(0,0,0,0.3)"
+                  justifyContent: "space-between",
+                  gap: 10,
+                  pointerEvents: "none"
                 }}
               >
-                <MapPin size={15} />
-                Street View
-              </button>
+                <button
+                  type="button"
+                  onClick={() => setShowPullMap(true)}
+                  style={{
+                    pointerEvents: "auto",
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: 6,
+                    padding: "9px 14px",
+                    borderRadius: 24,
+                    border: "1px solid rgba(255,255,255,0.24)",
+                    background: "rgba(0,0,0,0.58)",
+                    color: "#fff",
+                    fontSize: 13,
+                    fontWeight: 600,
+                    cursor: "pointer",
+                    backdropFilter: "blur(10px)",
+                    letterSpacing: 0.5,
+                    fontFamily: "'Outfit', sans-serif"
+                  }}
+                >
+                  <MapPin size={15} />
+                  Data Map
+                </button>
+
+                {!exploreMode ? (
+                  <button
+                    type="button"
+                    onClick={() => setExploreMode(true)}
+                    style={{
+                      pointerEvents: "auto",
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: 6,
+                      padding: "10px 20px",
+                      borderRadius: 24,
+                      border: "1px solid rgba(255,255,255,0.3)",
+                      background: "rgba(0,0,0,0.6)",
+                      color: "#fff",
+                      fontSize: 14,
+                      fontWeight: 600,
+                      cursor: "pointer",
+                      backdropFilter: "blur(10px)",
+                      letterSpacing: 0.8,
+                      fontFamily: "'Outfit', sans-serif",
+                      boxShadow: "0 4px 20px rgba(0,0,0,0.3)"
+                    }}
+                  >
+                    <MapPin size={15} />
+                    Street View
+                  </button>
+                ) : <div />}
+              </div>
             ) : null}
 
             {/* Exit explore mode button */}
@@ -461,6 +500,8 @@ export function GeoChoiceCard({
           </button>
         </footer>
       </motion.article>
+
+      {showPullMap ? <StreetViewPullMap round={round} onClose={() => setShowPullMap(false)} /> : null}
     </div>
   );
 }

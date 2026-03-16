@@ -109,6 +109,7 @@ export interface StreetViewRoundMedia {
   kind: "streetview";
   sceneKey: string;
   panoId: string;
+  coordinates?: [number, number];
   previewUrl: string;
   heading: number;
   pitch: number;
