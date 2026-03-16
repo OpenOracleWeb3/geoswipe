@@ -328,36 +328,36 @@ export async function getRoundMedia(round: GeoRound): Promise<RoundMedia> {
   const catalogEntry = CITY_BY_COUNTRY[country];
   const coords = round.cityCoordinates ?? catalogEntry?.coordinates;
 
-  // Try all coordinate sources to get a real pano ID
-  const attempts: Array<[number, number]> = [];
-  if (coords) attempts.push(coords);
-  if (catalogEntry && coords !== catalogEntry.coordinates) attempts.push(catalogEntry.coordinates);
-
-  // Add offset variants
-  if (coords) {
-    for (const [dLat, dLng] of STREET_VIEW_OFFSETS.slice(0, 6)) {
-      attempts.push([coords[0] + dLat, coords[1] + dLng]);
-    }
+  if (!coords || !GOOGLE_KEY) {
+    // Should never happen — all pairs are filtered to streetView:true countries
+    const heading = hashString(round.id) % 360;
+    return {
+      kind: "streetview",
+      sceneKey: `nocoords:${round.id}`,
+      panoId: "",
+      previewUrl: `https://maps.googleapis.com/maps/api/streetview?size=640x360&scale=2&location=48.8566,2.3522&heading=${heading}&pitch=5&key=${GOOGLE_KEY}`,
+      heading, pitch: 5, zoom: 1
+    };
   }
 
-  for (const attempt of attempts) {
-    const media = await fetchStreetViewFromCoordinates(attempt, round.id);
-    if (media) return media;
+  // Single metadata lookup from exact coordinates — includes offset attempts internally
+  const media = await fetchStreetViewFromCoordinates(coords, round.id);
+  if (media) return media;
+
+  // If city coords failed, try catalog coords
+  if (catalogEntry && round.cityCoordinates) {
+    const catMedia = await fetchStreetViewFromCoordinates(catalogEntry.coordinates, round.id);
+    if (catMedia) return catMedia;
   }
 
-  // Legacy anchors/centroids as last coordinate source
-  const googleMedia = await buildGoogleStreetViewMedia(country, round.id);
-  if (googleMedia) return googleMedia;
-
-  // Absolute last resort — use the Static API with coordinates directly.
-  // This always returns a Street View JPEG (Google picks nearest coverage).
-  const fallbackCoords = coords ?? [0, 0];
+  // Last resort — use Static API with location param (no pano ID needed).
+  // Google returns the nearest Street View to these coordinates.
   const heading = hashString(round.id) % 360;
   return {
     kind: "streetview",
-    sceneKey: `direct:${country}:${round.id}`,
+    sceneKey: `loc:${country}:${round.id}`,
     panoId: "",
-    previewUrl: `https://maps.googleapis.com/maps/api/streetview?size=640x360&scale=2&location=${fallbackCoords[0]},${fallbackCoords[1]}&fov=90&heading=${heading}&pitch=5&source=outdoor&key=${GOOGLE_KEY}`,
+    previewUrl: `https://maps.googleapis.com/maps/api/streetview?size=640x360&scale=2&location=${coords[0]},${coords[1]}&fov=90&heading=${heading}&pitch=5&source=outdoor&key=${GOOGLE_KEY}`,
     heading,
     pitch: 5,
     zoom: 1
