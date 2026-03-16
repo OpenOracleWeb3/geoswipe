@@ -333,34 +333,51 @@ export async function getRoundMedia(round: GeoRound): Promise<RoundMedia> {
     if (media) return media;
   }
 
-  // 2. Catalog coordinates — every country in the catalog has these
+  // 2. Catalog coordinates — every Street View country has these
   if (catalogEntry) {
     const media = await fetchStreetViewFromCoordinates(catalogEntry.coordinates, round.id);
     if (media) return media;
   }
 
-  // 3. Legacy anchors/centroids (for any countries in confusionPools but not catalog)
+  // 3. Legacy anchors/centroids
   const googleMedia = await buildGoogleStreetViewMedia(country, round.id);
   if (googleMedia) return googleMedia;
 
-  // 4. Wikimedia Commons — real photos of the country
-  const queryTerms = [
-    country,
-    ...(COUNTRY_SEARCH_KEYWORDS[country] ?? catalogEntry?.searchTerms ?? [country, "street", "city"]),
-    ...round.pair.contextSearchTerms.slice(0, 2)
-  ];
-  const wikimediaImages = await fetchWikimediaImages(queryTerms, 6);
-  if (wikimediaImages.length > 0) {
+  // 4. Try wider offsets from catalog coordinates
+  if (catalogEntry) {
+    for (let attempt = 1; attempt <= 3; attempt++) {
+      const media = await fetchStreetViewFromCoordinates(
+        [catalogEntry.coordinates[0] + attempt * 0.03, catalogEntry.coordinates[1] + attempt * 0.03],
+        `${round.id}:retry${attempt}`
+      );
+      if (media) return media;
+    }
+  }
+
+  // 5. Build a Street View static image URL directly from coordinates as absolute last resort
+  // This uses the Static API which returns a JPEG even without a pano ID
+  if (catalogEntry && GOOGLE_KEY) {
+    const [lat, lng] = catalogEntry.coordinates;
     return {
-      kind: "image",
-      url: wikimediaImages[hashString(round.id) % wikimediaImages.length]
+      kind: "streetview",
+      sceneKey: `direct:${country}:${round.id}`,
+      panoId: "",
+      previewUrl: `https://maps.googleapis.com/maps/api/streetview?size=640x360&scale=2&location=${lat},${lng}&fov=90&heading=${hashString(round.id) % 360}&pitch=5&return_error_code=false&key=${GOOGLE_KEY}`,
+      heading: hashString(round.id) % 360,
+      pitch: 5,
+      zoom: 1
     };
   }
 
-  // 5. Last resort
+  // Should never reach here — all pairs are filtered to streetView: true countries
   return {
-    kind: "image",
-    url: buildGenericPhotoFallback(country, round.pair.visualTags[0] ?? "landscape", round.roundNumber)
+    kind: "streetview",
+    sceneKey: `fallback:${round.id}`,
+    panoId: "",
+    previewUrl: `https://maps.googleapis.com/maps/api/streetview?size=640x360&location=0,0&key=${GOOGLE_KEY}`,
+    heading: 0,
+    pitch: 0,
+    zoom: 1
   };
 }
 
