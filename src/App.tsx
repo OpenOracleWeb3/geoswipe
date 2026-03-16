@@ -205,20 +205,22 @@ function GeoSwipeApp() {
 
     getPreloadedRoundMedia(currentRound)
       .then((media) => {
-        if (cancelled) {
-          return;
-        }
+        if (cancelled) return;
 
         const previewUrl = getRoundMediaPreviewUrl(media);
         setImageLoadProgress((value) => Math.max(value, 92));
 
+        // Preload the preview image into browser cache
         const previewImage = new Image();
         const handleReady = () => {
+          if (cancelled) return;
           setCurrentRoundMedia(media);
           finalizeLoad(previewUrl);
         };
 
         previewImage.onload = handleReady;
+        // On error, still set the media — the URL might work in the <img> tag
+        // even if the Image() constructor failed (CORS, etc)
         previewImage.onerror = handleReady;
         previewImage.src = previewUrl;
 
@@ -227,10 +229,23 @@ function GeoSwipeApp() {
         }
       })
       .catch(() => {
+        // Even on total failure, don't leave media as null.
+        // Build a direct Street View URL from the round's coordinates.
         window.clearInterval(progressTimer);
         if (!cancelled) {
-          setCurrentRoundMedia(null);
-          setCurrentImageUrl("");
+          const coords = currentRound.cityCoordinates ?? currentRound.location.coordinates;
+          const heading = (currentRound.roundNumber * 137) % 360;
+          const fallbackMedia = {
+            kind: "streetview" as const,
+            sceneKey: `emergency:${currentRound.id}`,
+            panoId: "",
+            previewUrl: `https://maps.googleapis.com/maps/api/streetview?size=640x360&scale=2&location=${coords[0]},${coords[1]}&heading=${heading}&pitch=5&source=outdoor&key=${import.meta.env?.VITE_GOOGLE_STREET_VIEW_API_KEY ?? ""}`,
+            heading,
+            pitch: 5,
+            zoom: 1
+          };
+          setCurrentRoundMedia(fallbackMedia);
+          setCurrentImageUrl(fallbackMedia.previewUrl);
           setImageLoadProgress(100);
           setIsImageLoading(false);
         }
