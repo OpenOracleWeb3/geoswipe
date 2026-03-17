@@ -74,7 +74,6 @@ interface GeoSoloLobbyProps {
 
 export function GeoSoloLobby({ onPlay, onBack, elo }: GeoSoloLobbyProps) {
   const [loaded, setLoaded] = useState(false);
-  const [selectedCat, setSelectedCat] = useState<string | null>(null);
 
   const rank = getRank(elo);
   const progress = getProgress(elo);
@@ -501,8 +500,8 @@ export function GeoSoloLobby({ onPlay, onBack, elo }: GeoSoloLobbyProps) {
             return (
               <button
                 key={cat.id}
-                className={`gs-lobby-cat-btn ${selectedCat === cat.id ? "selected" : ""}`}
-                onClick={() => setSelectedCat(cat.id)}
+                className="gs-lobby-cat-btn"
+                onClick={() => onPlay(cat.id)}
                 style={{
                   animation: loaded
                     ? `gs-lobby-slideUp 0.5s ${0.4 + i * 0.1}s cubic-bezier(0.25,0.46,0.45,0.94) both`
@@ -521,20 +520,6 @@ export function GeoSoloLobby({ onPlay, onBack, elo }: GeoSoloLobbyProps) {
             );
           })}
         </div>
-
-        {/* Play button */}
-        <button
-          type="button"
-          className="gs-lobby-play-btn"
-          disabled={!selectedCat}
-          onClick={() => selectedCat && onPlay(selectedCat)}
-          style={{
-            animation: loaded ? "gs-lobby-slideUp 0.5s 0.8s cubic-bezier(0.25,0.46,0.45,0.94) both" : "none",
-            marginBottom: 28,
-          }}
-        >
-          {selectedCat ? "Play" : "Select a Category"}
-        </button>
 
         {/* Rank tiers */}
         <div
