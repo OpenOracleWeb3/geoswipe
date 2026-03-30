@@ -10,7 +10,7 @@ import { useRoundFeedback } from "./hooks/useRoundFeedback";
 import { calculateRoundScore } from "./lib/scoring";
 import { calculateSwipeElo, loadPlayerStats, recordSession } from "./lib/rankingEngine";
 import { buildSessionSummary, createGameSession } from "./lib/sessionEngine";
-import { getBreakContextImages, getPreloadedRoundMedia, getRoundMediaPreviewUrl, preloadRoundMedia } from "./services/geoApi";
+import { getPreloadedRoundMedia, preloadRoundMedia } from "./services/geoApi";
 import type { BreakContextPayload, CategoryMode, GamePhase, GeoRound, RoundMedia, RoundOutcome, SwipeDirection } from "./types/game";
 
 const REASSESS_AFTER_MISSES = 3;
@@ -49,11 +49,9 @@ function GeoSwipeApp() {
   const [phase, setPhase] = useState<GamePhase>("round_active");
   const [secondsLeft, setSecondsLeft] = useState(() => initialBundle.session.rounds[0]?.timerSeconds ?? 0);
   const [currentRoundMedia, setCurrentRoundMedia] = useState<RoundMedia | null>(null);
-  const [currentImageUrl, setCurrentImageUrl] = useState("");
   const [isImageLoading, setIsImageLoading] = useState(false);
   const [imageLoadProgress, setImageLoadProgress] = useState(0);
   const [breakContext, setBreakContext] = useState<BreakContextPayload | null>(null);
-  const [isBreakLoading, setIsBreakLoading] = useState(false);
   const [playerScore, setPlayerScore] = useState(0);
   const [rivalScore, setRivalScore] = useState(0);
   const [streak, setStreak] = useState(0);
@@ -117,11 +115,9 @@ function GeoSwipeApp() {
     setPhase("round_active");
     setSecondsLeft(bundle.session.rounds[0]?.timerSeconds ?? 0);
     setCurrentRoundMedia(null);
-    setCurrentImageUrl("");
     setIsImageLoading(false);
     setImageLoadProgress(0);
     setBreakContext(null);
-    setIsBreakLoading(false);
     setPlayerScore(0);
     setRivalScore(0);
     setStreak(0);
@@ -176,14 +172,14 @@ function GeoSwipeApp() {
       });
     }, 140);
 
-    const finalizeLoad = (previewUrl: string) => {
+    const finalizeLoad = (media: RoundMedia) => {
       if (cancelled || finalized) {
         return;
       }
 
       finalized = true;
       window.clearInterval(progressTimer);
-      setCurrentImageUrl(previewUrl);
+      setCurrentRoundMedia(media);
       setImageLoadProgress(100);
       settleTimeout = window.setTimeout(() => {
         if (!cancelled) {
@@ -195,7 +191,6 @@ function GeoSwipeApp() {
     setIsImageLoading(true);
     setImageLoadProgress(8);
     setCurrentRoundMedia(null);
-    setCurrentImageUrl("");
 
     // Preload next 3 rounds while loading current
     const upcoming = session.rounds.slice(roundIndex + 1, roundIndex + 4);
@@ -207,48 +202,19 @@ function GeoSwipeApp() {
       .then((media) => {
         if (cancelled) return;
 
-        const previewUrl = getRoundMediaPreviewUrl(media);
         setImageLoadProgress((value) => Math.max(value, 92));
-
-        // Preload the preview image into browser cache
-        const previewImage = new Image();
-        const handleReady = () => {
-          if (cancelled) return;
-          setCurrentRoundMedia(media);
-          finalizeLoad(previewUrl);
-        };
-
-        previewImage.onload = handleReady;
-        // On error, still set the media — the URL might work in the <img> tag
-        // even if the Image() constructor failed (CORS, etc)
-        previewImage.onerror = handleReady;
-        previewImage.src = previewUrl;
-
-        if (previewImage.complete) {
-          handleReady();
-        }
+        finalizeLoad(media);
       })
       .catch(() => {
-        // Even on total failure, don't leave media as null.
-        // Build a direct Street View URL from the round's coordinates.
         window.clearInterval(progressTimer);
         if (!cancelled) {
-          const coords = currentRound.cityCoordinates ?? currentRound.location.coordinates;
-          const heading = (currentRound.roundNumber * 137) % 360;
-          const fallbackMedia = {
-            kind: "streetview" as const,
-            sceneKey: `emergency:${currentRound.id}`,
-            panoId: "",
-            coordinates: coords,
-            previewUrl: `https://maps.googleapis.com/maps/api/streetview?size=640x360&scale=2&location=${coords[0]},${coords[1]}&heading=${heading}&pitch=5&source=outdoor&key=${import.meta.env?.VITE_GOOGLE_STREET_VIEW_API_KEY ?? ""}`,
-            heading,
-            pitch: 5,
-            zoom: 1
-          };
-          setCurrentRoundMedia(fallbackMedia);
-          setCurrentImageUrl(fallbackMedia.previewUrl);
           setImageLoadProgress(100);
           setIsImageLoading(false);
+          window.setTimeout(() => {
+            if (!cancelled) {
+              advanceRound();
+            }
+          }, 0);
         }
       });
 
@@ -273,48 +239,23 @@ function GeoSwipeApp() {
     const requestId = breakRequestRef.current + 1;
     breakRequestRef.current = requestId;
     setBreakContext(null);
-    setIsBreakLoading(true);
+    if (requestId !== breakRequestRef.current) {
+      return;
+    }
 
-    getBreakContextImages(round)
-      .then((imageUrls) => {
-        if (requestId !== breakRequestRef.current) {
-          return;
-        }
+    const outcomeReason = outcome.timedOut ? "Timer expired before the read locked in." : `You chose ${outcome.selectedAnswer}.`;
 
-        const outcomeReason = outcome.timedOut ? "Timer expired before the read locked in." : `You chose ${outcome.selectedAnswer}.`;
-
-        setBreakContext({
-          headline: outcome.timedOut ? "Timer expired" : `${outcome.selectedAnswer} was the decoy`,
-          subhead: `${outcomeReason} Correct answer: ${round.correctAnswer}.`,
-          clueChips: [roundTag(round), round.pair.visualTags.slice(0, 2).join(" · ")],
-          coachingLine: round.pair.coachingLine,
-          imageUrls
-        });
-      })
-      .catch(() => {
-        if (requestId !== breakRequestRef.current) {
-          return;
-        }
-
-        setBreakContext({
-          headline: "Reassess the read",
-          subhead: `Correct answer: ${round.correctAnswer}.`,
-          clueChips: [roundTag(round), round.pair.visualTags.slice(0, 2).join(" · ")],
-          coachingLine: round.pair.coachingLine,
-          imageUrls: []
-        });
-      })
-      .finally(() => {
-        if (requestId === breakRequestRef.current) {
-          setIsBreakLoading(false);
-        }
-      });
+    setBreakContext({
+      headline: outcome.timedOut ? "Timer expired" : `${outcome.selectedAnswer} was the decoy`,
+      subhead: `${outcomeReason} Correct answer: ${round.correctAnswer}.`,
+      clueChips: [roundTag(round), round.pair.visualTags.slice(0, 2).join(" · ")],
+      coachingLine: round.pair.coachingLine
+    });
   };
 
   const advanceRound = () => {
     breakRequestRef.current += 1;
     setBreakContext(null);
-    setIsBreakLoading(false);
     setLastOutcome(null);
 
     const nextIndex = roundIndex + 1;
@@ -395,7 +336,7 @@ function GeoSwipeApp() {
     const shouldShowReassess = !isCorrect && nextMissCount >= REASSESS_AFTER_MISSES;
 
     // Hold the result screen for at least RESULT_FLASH_MIN_MS,
-    // and also wait for the next round's image to be preloaded.
+    // and also wait for the next round's media metadata to be preloaded.
     const nextRound = session.rounds[roundIndex + 1];
     const minDelay = new Promise<void>((r) => {
       transitionTimeoutRef.current = window.setTimeout(() => {
@@ -529,9 +470,7 @@ function GeoSwipeApp() {
             <ReassessBreakCard
               round={currentRound}
               outcome={lastOutcome}
-              originalImageUrl={currentImageUrl}
               context={breakContext}
-              isLoading={isBreakLoading}
               onContinue={advanceRound}
             />
           ) : null}

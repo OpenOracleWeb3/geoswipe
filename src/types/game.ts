@@ -191,7 +191,6 @@ export interface BreakContextPayload {
   subhead: string;
   clueChips: string[];
   coachingLine: string;
-  imageUrls: string[];
 }
 
 export interface GameSessionPlan {

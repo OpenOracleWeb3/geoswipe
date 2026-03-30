@@ -960,6 +960,10 @@ button:disabled {
   touch-action: pan-y;
 }
 
+.gs-choice-card.explore-mode {
+  touch-action: none;
+}
+
 .gs-live-round-shell .gs-choice-card,
 .gs-live-round-shell .gs-image-shell,
 .gs-live-round-shell .gs-image-shell.minimal {
@@ -1091,7 +1095,8 @@ button:disabled {
 }
 
 .gs-image-shell.interactive {
-  touch-action: pan-x pan-y;
+  touch-action: none;
+  cursor: grab;
 }
 
 .gs-image-shell::after {

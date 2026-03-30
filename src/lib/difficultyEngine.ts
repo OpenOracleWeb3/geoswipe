@@ -169,6 +169,41 @@ function stageToWorldRegionId(stage: RegionStage) {
     : "east_asia" as const;
 }
 
+function getCatalogBackedLocation(
+  country: string,
+  stageMeta: StageMeta,
+  tags: string[],
+  fallbackLabel = country
+) {
+  const catalogEntry = CITY_BY_COUNTRY[country];
+
+  if (catalogEntry) {
+    return {
+      id: `loc-${country.toLowerCase().replace(/\s+/g, "-")}`,
+      label: catalogEntry.city,
+      country,
+      continentId: stageToContinentId(stageMeta.stage),
+      continentLabel: stageMeta.label,
+      worldRegionId: stageToWorldRegionId(stageMeta.stage),
+      worldRegionLabel: stageMeta.label,
+      coordinates: [...catalogEntry.coordinates] as [number, number],
+      tags: [...tags]
+    };
+  }
+
+  return {
+    id: `loc-${country.toLowerCase().replace(/\s+/g, "-")}`,
+    label: fallbackLabel,
+    country,
+    continentId: stageToContinentId(stageMeta.stage),
+    continentLabel: stageMeta.label,
+    worldRegionId: stageToWorldRegionId(stageMeta.stage),
+    worldRegionLabel: stageMeta.label,
+    coordinates: [0, 0] as [number, number],
+    tags: [...tags]
+  };
+}
+
 /**
  * Pick from the massive combinatorial pair pool for a given stage/difficulty.
  * Used by city, continent, and worldwide modes.
@@ -218,6 +253,8 @@ function createCountryRound(pair: GeneratedPair, roundNumber: number, stageMeta:
   const correctAnswer = random() >= 0.5 ? firstOption : secondOption;
   const decoyAnswer = correctAnswer === firstOption ? secondOption : firstOption;
   const modifier = pickRoundModifier(stageMeta.stage, roundInStage);
+  const catalogEntry = CITY_BY_COUNTRY[correctAnswer];
+  const location = getCatalogBackedLocation(correctAnswer, stageMeta, pair.visualTags);
 
   return {
     id: `${pair.id}-${roundNumber}`,
@@ -236,24 +273,15 @@ function createCountryRound(pair: GeneratedPair, roundNumber: number, stageMeta:
       visualTags: pair.visualTags,
       contextSearchTerms: pair.contextSearchTerms
     },
-    location: {
-      id: `loc-${pair.id}`,
-      label: correctAnswer,
-      country: correctAnswer,
-      continentId: stageToContinentId(stageMeta.stage),
-      continentLabel: stageMeta.label,
-      worldRegionId: stageToWorldRegionId(stageMeta.stage),
-      worldRegionLabel: stageMeta.label,
-      coordinates: [0, 0],
-      tags: pair.visualTags
-    },
+    location,
     leftOption,
     rightOption,
     correctAnswer,
     decoyAnswer,
     correctDirection: correctAnswer === leftOption ? "left" : "right",
     sceneKey: `${pair.id}-${roundNumber}`,
-    mediaCountry: correctAnswer
+    mediaCountry: correctAnswer,
+    cityCoordinates: catalogEntry ? [...catalogEntry.coordinates] as [number, number] : undefined
   };
 }
 
@@ -290,6 +318,8 @@ function createContinentRoundFromCountryPair(
   const decoyLabel = correctIndex === 0 ? rightLabel : leftLabel;
   const mediaCountry = correctIndex === 0 ? leftCountry : rightCountry;
   const modifier = pickRoundModifier(stageMeta.stage, roundInStage);
+  const catalogEntry = CITY_BY_COUNTRY[mediaCountry];
+  const location = getCatalogBackedLocation(mediaCountry, stageMeta, pair.visualTags, mediaCountry);
 
   return {
     id: `cont-${pair.id}-${roundNumber}`,
@@ -308,24 +338,15 @@ function createContinentRoundFromCountryPair(
       visualTags: pair.visualTags,
       contextSearchTerms: pair.contextSearchTerms
     },
-    location: {
-      id: `loc-${pair.id}`,
-      label: mediaCountry,
-      country: mediaCountry,
-      continentId: stageToContinentId(stageMeta.stage),
-      continentLabel: stageMeta.label,
-      worldRegionId: stageToWorldRegionId(stageMeta.stage),
-      worldRegionLabel: stageMeta.label,
-      coordinates: [0, 0],
-      tags: pair.visualTags
-    },
+    location,
     leftOption: leftLabel,
     rightOption: rightLabel,
     correctAnswer: correctLabel,
     decoyAnswer: decoyLabel,
     correctDirection: correctLabel === leftLabel ? "left" : "right",
     sceneKey: `cont-${pair.id}-${roundNumber}`,
-    mediaCountry
+    mediaCountry,
+    cityCoordinates: catalogEntry ? [...catalogEntry.coordinates] as [number, number] : undefined
   };
 }
 

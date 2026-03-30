@@ -25,9 +25,11 @@ export interface CityCatalogEntry {
   coordinates: [number, number];
   continent: ContinentLabel;
   searchTerms: string[];
-  /** Whether this country has confirmed Google Street View coverage */
+  /** Legacy seed flag. Audited overrides below are authoritative where present. */
   streetView: boolean;
 }
+
+export type StreetViewCoverageTier = "exact" | "nearby" | "none";
 
 export const CITY_CATALOG: CityCatalogEntry[] = [
   // ══════════════════════════════════════════════════════════════════
@@ -54,13 +56,13 @@ export const CITY_CATALOG: CityCatalogEntry[] = [
   // CARIBBEAN
   // ══════════════════════════════════════════════════════════════════
   { country: "Jamaica", city: "Kingston", coordinates: [17.9712, -76.7936], continent: "Caribbean", searchTerms: ["Kingston Jamaica", "Caribbean street", "tropical town"], streetView: true },
-  { country: "Cuba", city: "Havana", coordinates: [23.1136, -82.3666], continent: "Caribbean", searchTerms: ["Havana old town", "classic cars", "Cuban street"], streetView: true },
+  { country: "Cuba", city: "Havana", coordinates: [23.1136, -82.3666], continent: "Caribbean", searchTerms: ["Havana old town", "classic cars", "Cuban street"], streetView: false },
   { country: "Dominican Republic", city: "Santo Domingo", coordinates: [18.4861, -69.9312], continent: "Caribbean", searchTerms: ["Santo Domingo colonial", "Dominican street", "Caribbean city"], streetView: true },
   { country: "Puerto Rico", city: "San Juan", coordinates: [18.4655, -66.1057], continent: "Caribbean", searchTerms: ["Old San Juan", "colorful street", "Caribbean colonial"], streetView: true },
   { country: "Trinidad and Tobago", city: "Port of Spain", coordinates: [10.6596, -61.5086], continent: "Caribbean", searchTerms: ["Port of Spain", "Trinidad street", "Caribbean port"], streetView: false },
   { country: "Barbados", city: "Bridgetown", coordinates: [13.0969, -59.6145], continent: "Caribbean", searchTerms: ["Bridgetown harbor", "Barbados street", "coral stone"], streetView: false },
   { country: "Curacao", city: "Willemstad", coordinates: [12.1696, -68.99], continent: "Caribbean", searchTerms: ["Willemstad colorful", "Curacao waterfront", "Dutch Caribbean"], streetView: true },
-  { country: "Aruba", city: "Oranjestad", coordinates: [12.5093, -70.0086], continent: "Caribbean", searchTerms: ["Oranjestad street", "Aruba coast", "Dutch Caribbean island"], streetView: true },
+  { country: "Aruba", city: "Oranjestad", coordinates: [12.5093, -70.0086], continent: "Caribbean", searchTerms: ["Oranjestad street", "Aruba coast", "Dutch Caribbean island"], streetView: false },
   { country: "US Virgin Islands", city: "Charlotte Amalie", coordinates: [18.3358, -64.9307], continent: "Caribbean", searchTerms: ["Charlotte Amalie harbor", "USVI street", "Caribbean port town"], streetView: true },
 
   // ══════════════════════════════════════════════════════════════════
@@ -126,9 +128,9 @@ export const CITY_CATALOG: CityCatalogEntry[] = [
   { country: "Bosnia and Herzegovina", city: "Sarajevo", coordinates: [43.8563, 18.4131], continent: "Europe", searchTerms: ["Sarajevo old town", "Bosnian capital", "valley city"], streetView: true },
   { country: "North Macedonia", city: "Skopje", coordinates: [41.9973, 21.428], continent: "Europe", searchTerms: ["Skopje center", "Macedonian capital", "Balkan city"], streetView: true },
   { country: "Albania", city: "Tirana", coordinates: [41.3275, 19.8187], continent: "Europe", searchTerms: ["Tirana colorful buildings", "Albanian capital", "Balkan city"], streetView: true },
-  { country: "Moldova", city: "Chisinau", coordinates: [47.0105, 28.8638], continent: "Europe", searchTerms: ["Chisinau boulevard", "Moldovan capital", "Soviet era"], streetView: true },
+  { country: "Moldova", city: "Chisinau", coordinates: [47.0105, 28.8638], continent: "Europe", searchTerms: ["Chisinau boulevard", "Moldovan capital", "Soviet era"], streetView: false },
   { country: "Ukraine", city: "Kyiv", coordinates: [50.4501, 30.5234], continent: "Europe", searchTerms: ["Kyiv Khreshchatyk", "Ukrainian capital", "golden domes"], streetView: true },
-  { country: "Georgia", city: "Tbilisi", coordinates: [41.7151, 44.8271], continent: "Europe", searchTerms: ["Tbilisi old town", "Georgian capital", "Caucasus city"], streetView: true },
+  { country: "Georgia", city: "Tbilisi", coordinates: [41.7151, 44.8271], continent: "Europe", searchTerms: ["Tbilisi old town", "Georgian capital", "Caucasus city"], streetView: false },
   { country: "Armenia", city: "Yerevan", coordinates: [40.1872, 44.5152], continent: "Europe", searchTerms: ["Yerevan pink stone", "Armenian capital", "Ararat view"], streetView: false },
   { country: "Kosovo", city: "Pristina", coordinates: [42.6629, 21.1655], continent: "Europe", searchTerms: ["Pristina street", "Kosovar capital", "Balkan city"], streetView: true },
   { country: "Belarus", city: "Minsk", coordinates: [53.9006, 27.559], continent: "Europe", searchTerms: ["Minsk boulevard", "Belarusian capital", "Soviet architecture"], streetView: true },
@@ -157,12 +159,12 @@ export const CITY_CATALOG: CityCatalogEntry[] = [
   // EAST AFRICA
   // ══════════════════════════════════════════════════════════════════
   { country: "Kenya", city: "Nairobi", coordinates: [-1.2921, 36.8219], continent: "Africa", searchTerms: ["Nairobi CBD", "Kenyan capital", "East African city"], streetView: true },
-  { country: "Tanzania", city: "Dar es Salaam", coordinates: [-6.7924, 39.2083], continent: "Africa", searchTerms: ["Dar es Salaam", "Tanzanian port", "East African coast"], streetView: true },
+  { country: "Tanzania", city: "Dar es Salaam", coordinates: [-6.7924, 39.2083], continent: "Africa", searchTerms: ["Dar es Salaam", "Tanzanian port", "East African coast"], streetView: false },
   { country: "Uganda", city: "Kampala", coordinates: [0.3476, 32.5825], continent: "Africa", searchTerms: ["Kampala hills", "Ugandan capital", "East African city"], streetView: true },
   { country: "Ethiopia", city: "Addis Ababa", coordinates: [9.0054, 38.7636], continent: "Africa", searchTerms: ["Addis Ababa street", "Ethiopian capital", "highland city"], streetView: false },
   { country: "Rwanda", city: "Kigali", coordinates: [-1.9706, 30.1044], continent: "Africa", searchTerms: ["Kigali clean street", "Rwandan capital", "thousand hills"], streetView: true },
-  { country: "Madagascar", city: "Antananarivo", coordinates: [-18.8792, 47.5079], continent: "Africa", searchTerms: ["Antananarivo hills", "Malagasy capital", "island city"], streetView: true },
-  { country: "Mauritius", city: "Port Louis", coordinates: [-20.1609, 57.5012], continent: "Africa", searchTerms: ["Port Louis waterfront", "Mauritian capital", "Indian Ocean island"], streetView: true },
+  { country: "Madagascar", city: "Antananarivo", coordinates: [-18.8792, 47.5079], continent: "Africa", searchTerms: ["Antananarivo hills", "Malagasy capital", "island city"], streetView: false },
+  { country: "Mauritius", city: "Port Louis", coordinates: [-20.1609, 57.5012], continent: "Africa", searchTerms: ["Port Louis waterfront", "Mauritian capital", "Indian Ocean island"], streetView: false },
 
   // ══════════════════════════════════════════════════════════════════
   // SOUTHERN AFRICA
@@ -194,7 +196,7 @@ export const CITY_CATALOG: CityCatalogEntry[] = [
   // CENTRAL ASIA
   // ══════════════════════════════════════════════════════════════════
   { country: "Kazakhstan", city: "Almaty", coordinates: [43.2551, 76.9126], continent: "South Asia", searchTerms: ["Almaty mountains", "Kazakh city", "Central Asian city"], streetView: true },
-  { country: "Uzbekistan", city: "Tashkent", coordinates: [41.2995, 69.2401], continent: "South Asia", searchTerms: ["Tashkent metro", "Uzbek capital", "Silk Road city"], streetView: true },
+  { country: "Uzbekistan", city: "Tashkent", coordinates: [41.2995, 69.2401], continent: "South Asia", searchTerms: ["Tashkent metro", "Uzbek capital", "Silk Road city"], streetView: false },
   { country: "Kyrgyzstan", city: "Bishkek", coordinates: [42.8746, 74.5698], continent: "South Asia", searchTerms: ["Bishkek street", "Kyrgyz capital", "mountain capital"], streetView: true },
   { country: "Mongolia", city: "Ulaanbaatar", coordinates: [47.9077, 106.9057], continent: "East Asia", searchTerms: ["Ulaanbaatar street", "Mongolian capital", "steppe city"], streetView: true },
 
@@ -231,8 +233,8 @@ export const CITY_CATALOG: CityCatalogEntry[] = [
   { country: "Singapore", city: "Singapore", coordinates: [1.3521, 103.8198], continent: "Southeast Asia", searchTerms: ["Marina Bay", "Singapore street", "garden city"], streetView: true },
   { country: "Indonesia", city: "Jakarta", coordinates: [-6.2088, 106.8456], continent: "Southeast Asia", searchTerms: ["Jakarta traffic", "Indonesian capital", "tropical megacity"], streetView: true },
   { country: "Philippines", city: "Manila", coordinates: [14.5995, 120.9842], continent: "Southeast Asia", searchTerms: ["Manila Intramuros", "Filipino city", "jeepney street"], streetView: true },
-  { country: "Brunei", city: "Bandar Seri Begawan", coordinates: [4.9031, 114.9398], continent: "Southeast Asia", searchTerms: ["Bandar Seri Begawan mosque", "Brunei capital", "oil-rich sultanate"], streetView: true },
-  { country: "East Timor", city: "Dili", coordinates: [-8.5569, 125.5603], continent: "Southeast Asia", searchTerms: ["Dili waterfront", "Timorese capital", "tropical port town"], streetView: true },
+  { country: "Brunei", city: "Bandar Seri Begawan", coordinates: [4.9031, 114.9398], continent: "Southeast Asia", searchTerms: ["Bandar Seri Begawan mosque", "Brunei capital", "oil-rich sultanate"], streetView: false },
+  { country: "East Timor", city: "Dili", coordinates: [-8.5569, 125.5603], continent: "Southeast Asia", searchTerms: ["Dili waterfront", "Timorese capital", "tropical port town"], streetView: false },
 
   // ══════════════════════════════════════════════════════════════════
   // OCEANIA
@@ -244,7 +246,7 @@ export const CITY_CATALOG: CityCatalogEntry[] = [
   { country: "Samoa", city: "Apia", coordinates: [-13.8333, -171.75], continent: "Oceania", searchTerms: ["Apia harbor", "Samoan capital", "Pacific town"], streetView: false },
   { country: "Tonga", city: "Nukualofa", coordinates: [-21.2087, -175.1982], continent: "Oceania", searchTerms: ["Nukualofa street", "Tongan capital", "Pacific island"], streetView: false },
   { country: "New Caledonia", city: "Noumea", coordinates: [-22.2558, 166.4505], continent: "Oceania", searchTerms: ["Noumea bay", "French Pacific", "New Caledonia coast"], streetView: true },
-  { country: "Vanuatu", city: "Port Vila", coordinates: [-17.7334, 168.3273], continent: "Oceania", searchTerms: ["Port Vila harbor", "Vanuatu capital", "Melanesian town"], streetView: true },
+  { country: "Vanuatu", city: "Port Vila", coordinates: [-17.7334, 168.3273], continent: "Oceania", searchTerms: ["Port Vila harbor", "Vanuatu capital", "Melanesian town"], streetView: false },
 ];
 
 /** Fast lookup: country name → catalog entry */
@@ -252,7 +254,62 @@ export const CITY_BY_COUNTRY: Record<string, CityCatalogEntry> = Object.fromEntr
   CITY_CATALOG.map((entry) => [entry.country, entry])
 );
 
-export const STREET_VIEW_CATALOG = CITY_CATALOG.filter((e) => e.streetView);
+/**
+ * Audited against the Google Street View metadata endpoint on 2026-03-29.
+ * - `exact`: the catalog city coordinate resolved directly.
+ * - `nearby`: the city pin missed, but the app's widened radius/offset search resolved a pano.
+ * - `none`: no pano resolved even after the widened search.
+ */
+export const STREET_VIEW_AUDIT: Partial<Record<string, StreetViewCoverageTier>> = {
+  Guatemala: "nearby",
+  "Costa Rica": "nearby",
+  Jamaica: "nearby",
+  Cuba: "none",
+  Curacao: "nearby",
+  Aruba: "none",
+  "US Virgin Islands": "nearby",
+  "Trinidad and Tobago": "nearby",
+  Bolivia: "nearby",
+  Switzerland: "nearby",
+  "San Marino": "nearby",
+  Moldova: "none",
+  Georgia: "none",
+  Kosovo: "nearby",
+  Belarus: "nearby",
+  Morocco: "nearby",
+  Egypt: "nearby",
+  Tanzania: "none",
+  Madagascar: "none",
+  Mauritius: "none",
+  "Ivory Coast": "nearby",
+  Mali: "nearby",
+  Ethiopia: "nearby",
+  Mozambique: "nearby",
+  "Saudi Arabia": "nearby",
+  Iraq: "nearby",
+  Uzbekistan: "none",
+  Kyrgyzstan: "nearby",
+  Mongolia: "nearby",
+  India: "nearby",
+  Pakistan: "nearby",
+  Bangladesh: "nearby",
+  China: "nearby",
+  Singapore: "nearby",
+  Brunei: "none",
+  "East Timor": "none",
+  "New Caledonia": "nearby",
+  Vanuatu: "none"
+};
+
+export function getStreetViewCoverage(entry: CityCatalogEntry): StreetViewCoverageTier {
+  return STREET_VIEW_AUDIT[entry.country] ?? (entry.streetView ? "exact" : "none");
+}
+
+export function hasStreetViewCoverage(entry: CityCatalogEntry): boolean {
+  return getStreetViewCoverage(entry) !== "none";
+}
+
+export const STREET_VIEW_CATALOG = CITY_CATALOG.filter((entry) => hasStreetViewCoverage(entry));
 
 /**
  * Broad continent grouping used for continent-mode display labels.
@@ -362,7 +419,7 @@ function buildAllPairs(): GeneratedPair[] {
     for (let j = i + 1; j < entries.length; j++) {
       const a = entries[i];
       const b = entries[j];
-      if (!a.streetView || !b.streetView) continue;
+      if (!hasStreetViewCoverage(a) || !hasStreetViewCoverage(b)) continue;
       const stageA = CONTINENT_TO_STAGE[a.continent];
       const stageB = CONTINENT_TO_STAGE[b.continent];
       const stages = stageA === stageB ? [stageA] : [stageA, stageB];

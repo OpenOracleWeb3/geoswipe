@@ -47,7 +47,7 @@ export function GeoChoiceCard({
   const [exploreMode, setExploreMode] = useState(false);
   const [showPullMap, setShowPullMap] = useState(false);
   const swipeDirectionRef = useRef<SwipeDirection | null>(null);
-  const isStreetView = media?.kind === "streetview" && Boolean(media.panoId);
+  const isStreetView = media?.kind === "streetview" && Boolean(media.panoId || media.coordinates);
 
   const x = useMotionValue(0);
   const rotate = useTransform(x, [-200, 0, 200], [-25, 0, 25]);
@@ -151,7 +151,7 @@ export function GeoChoiceCard({
 
 
       <motion.article
-        className={`gs-choice-card ${swipeDirection ? `gs-choice-card-swipe-${swipeDirection}` : ""}`}
+        className={`gs-choice-card ${swipeDirection ? `gs-choice-card-swipe-${swipeDirection}` : ""} ${exploreMode ? "explore-mode" : ""}`}
         drag={disabled || exploreMode ? false : "x"}
         dragConstraints={{ left: 0, right: 0 }}
         dragElastic={0.7}
@@ -218,14 +218,14 @@ export function GeoChoiceCard({
 
         {/* ── Image area ── */}
         <div className={`gs-image-frame ${isLoadingImage ? "loading" : hasTimer ? "timed" : "static"}`} style={frameStyle}>
-          <div className={`gs-image-shell ${minimal ? "minimal" : ""}`}>
+          <div className={`gs-image-shell ${minimal ? "minimal" : ""} ${exploreMode ? "interactive" : ""}`}>
             {isLoadingImage ? (
-              <div className="gs-image-loading">
-                <Sparkles size={18} />
-                <strong>{Math.round(loadingProgress)}%</strong>
-                <span>Loading location image...</span>
-              </div>
-            ) : media?.kind === "streetview" ? (
+                <div className="gs-image-loading">
+                  <Sparkles size={18} />
+                  <strong>{Math.round(loadingProgress)}%</strong>
+                  <span>Loading Street View...</span>
+                </div>
+              ) : media?.kind === "streetview" ? (
               <StreetViewPanorama media={media} alt="Geography challenge" interactive={exploreMode} />
             ) : null}
 
@@ -277,29 +277,38 @@ export function GeoChoiceCard({
                       pointerEvents: "auto",
                       display: "inline-flex",
                       alignItems: "center",
-                      gap: 6,
-                      padding: "10px 20px",
-                      borderRadius: 24,
+                      justifyContent: "center",
+                      gap: 10,
+                      flex: 1,
+                      minWidth: 0,
+                      padding: "12px 18px",
+                      borderRadius: 26,
                       border: "1px solid rgba(255,255,255,0.3)",
-                      background: "rgba(0,0,0,0.6)",
+                      background: "rgba(12,12,12,0.72)",
                       color: "#fff",
                       fontSize: 14,
                       fontWeight: 600,
                       cursor: "pointer",
                       backdropFilter: "blur(10px)",
-                      letterSpacing: 0.8,
+                      letterSpacing: 0.2,
                       fontFamily: "'Outfit', sans-serif",
-                      boxShadow: "0 4px 20px rgba(0,0,0,0.3)"
+                      boxShadow: "0 10px 30px rgba(0,0,0,0.32)"
                     }}
+                    aria-label="Enter panoramic mode"
                   >
-                    <MapPin size={15} />
-                    Street View
+                    <MapPin size={16} />
+                    <span style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", lineHeight: 1.05 }}>
+                      <strong style={{ fontSize: 14, fontWeight: 700 }}>Enter Panorama</strong>
+                      <span style={{ fontSize: 11, opacity: 0.76, letterSpacing: 0.6, textTransform: "uppercase" }}>
+                        Tap to look around
+                      </span>
+                    </span>
                   </button>
                 ) : <div />}
               </div>
             ) : null}
 
-            {/* Exit explore mode button */}
+            {/* Exit panorama mode button */}
             {exploreMode && !resultOutcome ? (
               <button
                 type="button"
@@ -326,7 +335,7 @@ export function GeoChoiceCard({
                 }}
               >
                 <X size={13} />
-                Exit Explore
+                Exit Panorama
               </button>
             ) : null}
 

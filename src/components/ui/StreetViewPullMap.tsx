@@ -262,7 +262,7 @@ export function StreetViewPullMap({ round, onClose }: StreetViewPullMapProps) {
                       trace.resolution === "pano"
                         ? "Resolved to pano"
                         : trace.resolution === "location_fallback"
-                          ? "Static location fallback"
+                          ? "No pano resolved"
                           : "Missing coordinates or key"
                   },
                   {

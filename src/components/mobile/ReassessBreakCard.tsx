@@ -4,18 +4,14 @@ import type { BreakContextPayload, GeoRound, RoundOutcome } from "../../types/ga
 interface ReassessBreakCardProps {
   round: GeoRound;
   outcome: RoundOutcome;
-  originalImageUrl: string;
   context: BreakContextPayload | null;
-  isLoading: boolean;
   onContinue: () => void;
 }
 
 export function ReassessBreakCard({
   round,
   outcome,
-  originalImageUrl,
   context,
-  isLoading,
   onContinue
 }: ReassessBreakCardProps) {
   return (
@@ -30,8 +26,7 @@ export function ReassessBreakCard({
 
       <div className="gs-break-grid">
         <article className="gs-break-primary">
-          <img src={originalImageUrl} alt="Original round" className="gs-break-primary-image" />
-          <div className="gs-break-primary-copy">
+          <div className="gs-break-primary-copy" style={{ padding: "20px 22px", minHeight: 180, justifyContent: "center" }}>
             <span>{outcome.timedOut ? "Timed out" : `You chose ${outcome.selectedAnswer}`}</span>
             <strong>{context?.subhead ?? `Correct answer: ${round.correctAnswer}`}</strong>
           </div>
@@ -42,15 +37,32 @@ export function ReassessBreakCard({
             <CheckCircle2 size={16} />
             <span>Correct answer context</span>
           </div>
-          {isLoading ? (
-            <div className="gs-break-loading">Loading surrounding references...</div>
-          ) : (
-            <div className="gs-break-context-images">
-              {(context?.imageUrls ?? []).map((imageUrl) => (
-                <img key={imageUrl} src={imageUrl} alt={`${round.correctAnswer} context`} />
-              ))}
+          <div
+            style={{
+              display: "grid",
+              gap: 10,
+              padding: "18px 20px 20px"
+            }}
+          >
+            {(context?.clueChips ?? []).map((chip) => (
+              <div
+                key={chip}
+                style={{
+                  padding: "12px 14px",
+                  borderRadius: 16,
+                  background: "rgba(255,255,255,0.05)",
+                  border: "1px solid rgba(255,255,255,0.08)",
+                  color: "#fff",
+                  fontWeight: 600
+                }}
+              >
+                {chip}
+              </div>
+            ))}
+            <div style={{ color: "rgba(255,255,255,0.72)", lineHeight: 1.5 }}>
+              Street View only mode is enabled for the run, so reassess screens stay text-first instead of showing static reference images.
             </div>
-          )}
+          </div>
         </article>
       </div>
 
