@@ -294,11 +294,11 @@ export function GeoChoiceCard({
                       fontFamily: "'Outfit', sans-serif",
                       boxShadow: "0 10px 30px rgba(0,0,0,0.32)"
                     }}
-                    aria-label="Enter panoramic mode"
+                    aria-label="Open Street View panorama"
                   >
                     <MapPin size={16} />
                     <span style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", lineHeight: 1.05 }}>
-                      <strong style={{ fontSize: 14, fontWeight: 700 }}>Enter Panorama</strong>
+                      <strong style={{ fontSize: 14, fontWeight: 700 }}>Street View</strong>
                       <span style={{ fontSize: 11, opacity: 0.76, letterSpacing: 0.6, textTransform: "uppercase" }}>
                         Tap to look around
                       </span>
@@ -335,7 +335,7 @@ export function GeoChoiceCard({
                 }}
               >
                 <X size={13} />
-                Exit Panorama
+                Exit Street View
               </button>
             ) : null}
 
