@@ -1,5 +1,5 @@
 import { AnimatePresence, motion, useMotionValue, useTransform, type PanInfo } from "framer-motion";
-import { ArrowBigLeft, ArrowBigRight, CircleHelp, MapPin, Sparkles, TrendingDown, TrendingUp, X } from "lucide-react";
+import { ArrowBigLeft, ArrowBigRight, CircleHelp, MapPin, Sparkles, TrendingDown, TrendingUp } from "lucide-react";
 import { useRef, useState, type CSSProperties } from "react";
 import { getCountryFlagUrl } from "../../data/countryFlags";
 import type { GeoRound, RoundMedia, RoundOutcome, SwipeDirection } from "../../types/game";
@@ -70,6 +70,7 @@ export function GeoChoiceCard({
     "--gs-load-progress": `${Math.max(0, Math.min(100, Math.round(loadingProgress)))}%`,
     "--gs-timer-progress": `${Math.max(0, Math.min(100, Math.round((timerProgress ?? 1) * 100)))}%`
   } as CSSProperties;
+  const questionLabel = round.mode === "city" ? "city" : round.mode === "continent" ? "continent" : "country";
 
   const submitGuess = (direction: SwipeDirection) => {
     if (disabled) return;
@@ -133,21 +134,25 @@ export function GeoChoiceCard({
         </div>
       ) : null}
 
-      <motion.div
-        className={`gs-direction-hint gs-direction-left ${minimal ? "minimal" : ""}`}
-        style={{ opacity: leftHintOpacity }}
-      >
-        <ArrowBigLeft size={20} />
-        <span>{round.leftOption}</span>
-      </motion.div>
+      {!exploreMode ? (
+        <>
+          <motion.div
+            className={`gs-direction-hint gs-direction-left ${minimal ? "minimal" : ""}`}
+            style={{ opacity: leftHintOpacity }}
+          >
+            <ArrowBigLeft size={20} />
+            <span>{round.leftOption}</span>
+          </motion.div>
 
-      <motion.div
-        className={`gs-direction-hint gs-direction-right ${minimal ? "minimal" : ""}`}
-        style={{ opacity: rightHintOpacity }}
-      >
-        <span>{round.rightOption}</span>
-        <ArrowBigRight size={20} />
-      </motion.div>
+          <motion.div
+            className={`gs-direction-hint gs-direction-right ${minimal ? "minimal" : ""}`}
+            style={{ opacity: rightHintOpacity }}
+          >
+            <span>{round.rightOption}</span>
+            <ArrowBigRight size={20} />
+          </motion.div>
+        </>
+      ) : null}
 
 
       <motion.article
@@ -216,6 +221,36 @@ export function GeoChoiceCard({
           </div>
         </header>
 
+        {isStreetView && !resultOutcome ? (
+          <div className="gs-media-toolbar">
+            <button
+              type="button"
+              className="gs-media-tool"
+              onClick={() => setShowPullMap(true)}
+            >
+              <MapPin size={15} />
+              <span>Data Map</span>
+            </button>
+
+            <button
+              type="button"
+              className={`gs-media-tool gs-media-tool-primary ${exploreMode ? "active" : ""}`}
+              onClick={() => {
+                setSwipeDirection(null);
+                swipeDirectionRef.current = null;
+                setExploreMode((value) => !value);
+              }}
+              aria-label={exploreMode ? "Exit Street View panorama" : "Open Street View panorama"}
+              aria-pressed={exploreMode}
+            >
+              <span className="gs-media-tool-copy">
+                <strong>{exploreMode ? "Exit Street View" : "Street View"}</strong>
+                <span>{exploreMode ? "Back to swipe mode" : "Tap to enter panorama"}</span>
+              </span>
+            </button>
+          </div>
+        ) : null}
+
         {/* ── Image area ── */}
         <div className={`gs-image-frame ${isLoadingImage ? "loading" : hasTimer ? "timed" : "static"}`} style={frameStyle}>
           <div className={`gs-image-shell ${minimal ? "minimal" : ""} ${exploreMode ? "interactive" : ""}`}>
@@ -229,114 +264,11 @@ export function GeoChoiceCard({
               <StreetViewPanorama media={media} alt="Geography challenge" interactive={exploreMode} />
             ) : null}
 
-            {/* Street View explore button — centered */}
-            {isStreetView && !resultOutcome ? (
-              <div
-                style={{
-                  position: "absolute",
-                  left: 12,
-                  right: 12,
-                  bottom: 12,
-                  zIndex: 15,
-                  display: "flex",
-                  justifyContent: "space-between",
-                  gap: 10,
-                  pointerEvents: "none"
-                }}
-              >
-                <button
-                  type="button"
-                  onClick={() => setShowPullMap(true)}
-                  style={{
-                    pointerEvents: "auto",
-                    display: "inline-flex",
-                    alignItems: "center",
-                    gap: 6,
-                    padding: "9px 14px",
-                    borderRadius: 24,
-                    border: "1px solid rgba(255,255,255,0.24)",
-                    background: "rgba(0,0,0,0.58)",
-                    color: "#fff",
-                    fontSize: 13,
-                    fontWeight: 600,
-                    cursor: "pointer",
-                    backdropFilter: "blur(10px)",
-                    letterSpacing: 0.5,
-                    fontFamily: "'Outfit', sans-serif"
-                  }}
-                >
-                  <MapPin size={15} />
-                  Data Map
-                </button>
-
-                {!exploreMode ? (
-                  <button
-                    type="button"
-                    onClick={() => setExploreMode(true)}
-                    style={{
-                      pointerEvents: "auto",
-                      display: "inline-flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      gap: 10,
-                      flex: 1,
-                      minWidth: 0,
-                      padding: "12px 18px",
-                      borderRadius: 26,
-                      border: "1px solid rgba(255,255,255,0.3)",
-                      background: "rgba(12,12,12,0.72)",
-                      color: "#fff",
-                      fontSize: 14,
-                      fontWeight: 600,
-                      cursor: "pointer",
-                      backdropFilter: "blur(10px)",
-                      letterSpacing: 0.2,
-                      fontFamily: "'Outfit', sans-serif",
-                      boxShadow: "0 10px 30px rgba(0,0,0,0.32)"
-                    }}
-                    aria-label="Open Street View panorama"
-                  >
-                    <MapPin size={16} />
-                    <span style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", lineHeight: 1.05 }}>
-                      <strong style={{ fontSize: 14, fontWeight: 700 }}>Street View</strong>
-                      <span style={{ fontSize: 11, opacity: 0.76, letterSpacing: 0.6, textTransform: "uppercase" }}>
-                        Tap to look around
-                      </span>
-                    </span>
-                  </button>
-                ) : <div />}
-              </div>
-            ) : null}
-
-            {/* Exit panorama mode button */}
             {exploreMode && !resultOutcome ? (
-              <button
-                type="button"
-                onClick={() => setExploreMode(false)}
-                style={{
-                  position: "absolute",
-                  top: 10,
-                  right: 10,
-                  zIndex: 15,
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 5,
-                  padding: "6px 12px",
-                  borderRadius: 20,
-                  border: "1px solid rgba(255,255,255,0.25)",
-                  background: "rgba(231,76,60,0.7)",
-                  color: "#fff",
-                  fontSize: 12,
-                  fontWeight: 600,
-                  cursor: "pointer",
-                  backdropFilter: "blur(8px)",
-                  letterSpacing: 0.5,
-                  fontFamily: "'Outfit', sans-serif"
-                }}
-              >
-                <X size={13} />
-                Exit Street View
-              </button>
+              <div className="gs-panorama-guide">
+                <span className="gs-panorama-guide-pill">Street View active</span>
+                <strong>Look around, then tap your choice below.</strong>
+              </div>
             ) : null}
 
             {/* ── Matt's result burst ── */}
@@ -468,7 +400,7 @@ export function GeoChoiceCard({
         {!minimal ? (
           <section className="gs-choice-copy">
             <span className="gs-choice-kicker">
-              Swipe or tap a {round.mode === "city" ? "city" : round.mode === "continent" ? "continent" : "country"}
+              {exploreMode ? "Inspect the pano, then tap your choice" : `Swipe or tap a ${questionLabel}`}
             </span>
             <div className="gs-choice-title">
               <CircleHelp size={18} />
@@ -484,15 +416,19 @@ export function GeoChoiceCard({
         ) : null}
 
         {/* ── Option buttons (Matt's pill style) ── */}
-        <footer className={`gs-choice-actions ${minimal ? "minimal" : ""}`}>
+        <footer className={`gs-choice-actions ${minimal ? "minimal" : ""} ${exploreMode ? "pano" : ""}`}>
           <button
             className={`gs-choice-action gs-choice-action-left ${swipeDirection === "left" ? "active" : ""}`}
             disabled={disabled}
             onClick={() => submitGuess("left")}
           >
             <span className="gs-choice-action-label">
-              <ArrowBigLeft size={18} />
-              {exploreMode ? "Tap left" : "Swipe left"}
+              {exploreMode ? "Tap to choose" : (
+                <>
+                  <ArrowBigLeft size={18} />
+                  Swipe left
+                </>
+              )}
             </span>
             <strong>{round.leftOption}</strong>
           </button>
@@ -502,8 +438,12 @@ export function GeoChoiceCard({
             onClick={() => submitGuess("right")}
           >
             <span className="gs-choice-action-label">
-              {exploreMode ? "Tap right" : "Swipe right"}
-              <ArrowBigRight size={18} />
+              {exploreMode ? "Tap to choose" : (
+                <>
+                  Swipe right
+                  <ArrowBigRight size={18} />
+                </>
+              )}
             </span>
             <strong>{round.rightOption}</strong>
           </button>
