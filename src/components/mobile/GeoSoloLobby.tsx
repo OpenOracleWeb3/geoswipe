@@ -1,4 +1,6 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, type Dispatch, type SetStateAction } from "react";
+import { GoogleAuthPanel } from "../auth/GoogleAuthPanel";
+import type { GoogleAuthUser } from "../../services/googleIdentity";
 
 const RANKS = [
   { name: "Bronze", min: 0, max: 799, color: "#cd7f32", icon: "\uD83E\uDD49" },
@@ -70,9 +72,11 @@ interface GeoSoloLobbyProps {
   onPlay: (category: string) => void;
   onBack: () => void;
   elo: number;
+  authUser: GoogleAuthUser | null;
+  setAuthUser: Dispatch<SetStateAction<GoogleAuthUser | null>>;
 }
 
-export function GeoSoloLobby({ onPlay, onBack, elo }: GeoSoloLobbyProps) {
+export function GeoSoloLobby({ onPlay, onBack, elo, authUser, setAuthUser }: GeoSoloLobbyProps) {
   const [loaded, setLoaded] = useState(false);
 
   const rank = getRank(elo);
@@ -435,6 +439,27 @@ export function GeoSoloLobby({ onPlay, onBack, elo }: GeoSoloLobbyProps) {
               <span>{nextRank ? `${nextRank.name} at ${nextRank.min}` : "Max Rank"}</span>
             </div>
           </div>
+        </div>
+
+        <div
+          style={{
+            width: "100%",
+            maxWidth: 360,
+            marginBottom: 20,
+            animation: loaded ? "gs-lobby-slideUp 0.6s 0.18s cubic-bezier(0.25,0.46,0.45,0.94) both" : "none"
+          }}
+        >
+          <GoogleAuthPanel
+            compact
+            user={authUser}
+            setUser={setAuthUser}
+            title={authUser ? "Account connected" : "Connect Google"}
+            subtitle={
+              authUser
+                ? "Runs on this device now have a linked Google identity."
+                : "Attach this device profile before the real server-side account sync lands."
+            }
+          />
         </div>
 
         {/* Daily Rumble */}

@@ -16,20 +16,25 @@ Reused/adapted UI patterns:
 
 ## Run
 ```bash
-cd frontend/geoswipe
+cd /Users/samsavage/geo/geoswipe
 npm install
 npm run dev
 ```
 
-App starts on `http://localhost:4175`.
+Vite will print the local URL, usually `http://localhost:5173`.
 
-## Optional Google Street View
-Set this env var if you want Google Street View images:
+## Environment
+Copy `.env.example` to `.env` and set the keys you need:
 ```bash
 VITE_GOOGLE_STREET_VIEW_API_KEY=...
+VITE_GOOGLE_CLIENT_ID=...
 ```
 
-Without a key, the app falls back to Wikimedia Commons search + Unsplash source URLs.
+`VITE_GOOGLE_STREET_VIEW_API_KEY` enables Street View metadata + panorama loading.
+
+`VITE_GOOGLE_CLIENT_ID` enables the client-side Google sign-in UI now wired into the home screen, solo lobby, profile screen, and in-run menu.
+
+Important: this repo is still frontend-only. Google sign-in currently attaches a local device profile to a Google identity in the browser, but there is no backend token exchange or database persistence yet.
 
 ## Desktop via Capacitor
 
@@ -47,5 +52,18 @@ Once `npm install` has been run (the new Capacitor dependencies require network 
 - Hourly deck difficulty target: **65% hard / 35% easy**
 - Hard rounds use look-alike country pairs
 - Easy rounds use obvious contrast pairs
+
+## Database schema
+The repo includes a Postgres schema in `schema/001_initial.sql` for future backend work. It defines:
+- `players`
+- `sessions`
+- `round_outcomes`
+- `elo_history`
+- `daily_rumbles`
+- `daily_rumble_entries`
+- `leaderboard_snapshots`
+- `country_stats`
+
+That schema is not connected to the shipped app yet.
 
 See [`GEOSWIPE_PLAN.md`](./GEOSWIPE_PLAN.md) for full product/system roadmap.

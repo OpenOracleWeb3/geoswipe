@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { LogOut, RotateCcw, Settings2, X } from "lucide-react";
+import { LogOut, RotateCcw, Settings2, ShieldCheck, X } from "lucide-react";
 import { GeoChoiceCard } from "./components/mobile/GeoChoiceCard";
 import { GeoHomeScreen } from "./components/mobile/GeoHomeScreen";
 import { GeoProfileScreen } from "./components/mobile/GeoProfileScreen";
@@ -11,6 +11,7 @@ import { calculateRoundScore } from "./lib/scoring";
 import { calculateSwipeElo, loadPlayerStats, recordSession } from "./lib/rankingEngine";
 import { buildSessionSummary, createGameSession } from "./lib/sessionEngine";
 import { getPreloadedRoundMedia, preloadRoundMedia } from "./services/geoApi";
+import { clearStoredGoogleAuthUser, disableGoogleAutoSelect, loadStoredGoogleAuthUser, type GoogleAuthUser } from "./services/googleIdentity";
 import type { BreakContextPayload, CategoryMode, GamePhase, GeoRound, RoundMedia, RoundOutcome, SwipeDirection } from "./types/game";
 
 const REASSESS_AFTER_MISSES = 3;
@@ -63,6 +64,7 @@ function GeoSwipeApp() {
   const [globalElo, setGlobalElo] = useState(() => loadPlayerStats().globalElo);
   const [eloDelta, setEloDelta] = useState<number | null>(null);
   const [lastSwipeEloDelta, setLastSwipeEloDelta] = useState<number | null>(null);
+  const [authUser, setAuthUser] = useState<GoogleAuthUser | null>(() => loadStoredGoogleAuthUser());
   const sessionRecordedRef = useRef(false);
 
   const breakRequestRef = useRef(0);
@@ -142,6 +144,13 @@ function GeoSwipeApp() {
 
   const startSoloRun = (category: string) => {
     startNewSession(category as CategoryMode);
+  };
+
+  const signOutGoogle = () => {
+    disableGoogleAutoSelect();
+    clearStoredGoogleAuthUser();
+    setAuthUser(null);
+    setMenuOpen(false);
   };
 
   useEffect(() => clearTransitionTimeout, []);
@@ -383,7 +392,13 @@ function GeoSwipeApp() {
   if (screen === "home") {
     return (
       <div className="gs-app-shell home">
-        <GeoHomeScreen onStartSolo={openSoloLobby} onProfile={() => setScreen("profile")} elo={globalElo} />
+        <GeoHomeScreen
+          onStartSolo={openSoloLobby}
+          onProfile={() => setScreen("profile")}
+          elo={globalElo}
+          authUser={authUser}
+          setAuthUser={setAuthUser}
+        />
       </div>
     );
   }
@@ -391,7 +406,7 @@ function GeoSwipeApp() {
   if (screen === "profile") {
     return (
       <div className="gs-app-shell home">
-        <GeoProfileScreen elo={globalElo} onBack={() => setScreen("home")} />
+        <GeoProfileScreen elo={globalElo} onBack={() => setScreen("home")} authUser={authUser} setAuthUser={setAuthUser} />
       </div>
     );
   }
@@ -399,7 +414,7 @@ function GeoSwipeApp() {
   if (screen === "solo_lobby") {
     return (
       <div className="gs-app-shell home">
-        <GeoSoloLobby onPlay={startSoloRun} onBack={() => setScreen("home")} elo={globalElo} />
+        <GeoSoloLobby onPlay={startSoloRun} onBack={() => setScreen("home")} elo={globalElo} authUser={authUser} setAuthUser={setAuthUser} />
       </div>
     );
   }
@@ -422,6 +437,29 @@ function GeoSwipeApp() {
             <>
               <button type="button" className="gs-utility-menu-scrim" aria-label="Close round menu" onClick={() => setMenuOpen(false)} />
               <div className="gs-utility-menu">
+                <div
+                  style={{
+                    marginBottom: 6,
+                    padding: "10px 12px",
+                    borderRadius: 16,
+                    background: "rgba(255,255,255,0.04)",
+                    border: "1px solid rgba(255,255,255,0.06)",
+                    color: "#fff"
+                  }}
+                >
+                  <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
+                    <ShieldCheck size={14} color={authUser ? "#9fe870" : "rgba(255,255,255,0.4)"} />
+                    <span style={{ fontSize: 11, fontWeight: 800, letterSpacing: 1.2, textTransform: "uppercase", color: authUser ? "#9fe870" : "rgba(255,255,255,0.42)" }}>
+                      {authUser ? "Google linked" : "Guest mode"}
+                    </span>
+                  </div>
+                  <div style={{ fontWeight: 700, fontSize: 14 }}>
+                    {authUser?.name ?? "No Google account attached"}
+                  </div>
+                  <div style={{ marginTop: 2, fontSize: 12, color: "rgba(255,255,255,0.5)" }}>
+                    {authUser?.email ?? "This frontend repo is still running local-only profile state."}
+                  </div>
+                </div>
                 <button type="button" className="gs-utility-menu-button" onClick={() => setMenuOpen(false)}>
                   <X size={16} />
                   Resume
@@ -430,6 +468,12 @@ function GeoSwipeApp() {
                   <RotateCcw size={16} />
                   Restart Run
                 </button>
+                {authUser ? (
+                  <button type="button" className="gs-utility-menu-button" onClick={signOutGoogle}>
+                    <LogOut size={16} />
+                    Sign Out
+                  </button>
+                ) : null}
                 <button type="button" className="gs-utility-menu-button danger" onClick={quitToStart}>
                   <LogOut size={16} />
                   Quit Run

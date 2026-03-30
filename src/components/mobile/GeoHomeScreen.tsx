@@ -1,4 +1,6 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, type Dispatch, type SetStateAction } from "react";
+import { GoogleAuthPanel } from "../auth/GoogleAuthPanel";
+import type { GoogleAuthUser } from "../../services/googleIdentity";
 
 const CONTINENTS = [
   "M 120 85 Q 125 80 135 78 L 145 80 Q 155 82 158 88 L 160 95 Q 158 105 150 112 L 140 118 Q 132 120 128 115 L 122 108 Q 118 100 118 92 Z",
@@ -106,9 +108,11 @@ interface GeoHomeScreenProps {
   onStartSolo: () => void;
   onProfile: () => void;
   elo: number;
+  authUser: GoogleAuthUser | null;
+  setAuthUser: Dispatch<SetStateAction<GoogleAuthUser | null>>;
 }
 
-export function GeoHomeScreen({ onStartSolo, onProfile, elo }: GeoHomeScreenProps) {
+export function GeoHomeScreen({ onStartSolo, onProfile, elo, authUser, setAuthUser }: GeoHomeScreenProps) {
   const [hoveredBtn, setHoveredBtn] = useState<string | null>(null);
   const [loaded, setLoaded] = useState(false);
   const [globeRotation, setGlobeRotation] = useState(0);
@@ -333,6 +337,28 @@ export function GeoHomeScreen({ onStartSolo, onProfile, elo }: GeoHomeScreenProp
           color: "#2ecc71",
           letterSpacing: 1,
         }}>{elo}</span>
+      </div>
+
+      <div
+        style={{
+          width: "100%",
+          maxWidth: 360,
+          zIndex: 2,
+          marginBottom: 28,
+          animation: loaded ? "gs-home-slideUp 0.6s 0.38s cubic-bezier(0.25, 0.46, 0.45, 0.94) both" : "none"
+        }}
+      >
+        <GoogleAuthPanel
+          compact
+          user={authUser}
+          setUser={setAuthUser}
+          title={authUser ? "Google account" : "Sign in with Google"}
+          subtitle={
+            authUser
+              ? "This device profile is currently attached to your Google identity."
+              : "Keep this GeoSwipe profile tied to a real account while the backend is still being wired."
+          }
+        />
       </div>
 
       {/* Globe + Buttons */}

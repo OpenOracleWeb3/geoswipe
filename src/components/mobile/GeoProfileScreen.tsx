@@ -1,14 +1,18 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, type Dispatch, type SetStateAction } from "react";
 import { ArrowLeft, Trophy } from "lucide-react";
 import { getRankForElo, getRankProgress, getNextRank, loadPlayerStats, type PlayerStats } from "../../lib/rankingEngine";
+import { GoogleAuthPanel } from "../auth/GoogleAuthPanel";
+import type { GoogleAuthUser } from "../../services/googleIdentity";
 
 interface GeoProfileScreenProps {
   elo: number;
   onBack: () => void;
+  authUser: GoogleAuthUser | null;
+  setAuthUser: Dispatch<SetStateAction<GoogleAuthUser | null>>;
 }
 
 // Fake leaderboard entries — in production these come from Postgres
-function generateLeaderboard(playerElo: number): Array<{ name: string; elo: number; isYou: boolean }> {
+function generateLeaderboard(playerElo: number, playerLabel: string): Array<{ name: string; elo: number; isYou: boolean }> {
   const names = [
     "GeoKing99", "MapMaster", "WanderLux", "AtlasAce",
     "NomadNova", "CompassPro", "TrekStar", "GlobeTrek",
@@ -24,20 +28,20 @@ function generateLeaderboard(playerElo: number): Array<{ name: string; elo: numb
     entries.push({ name: names[i], elo: Math.max(0, playerElo + offset), isYou: false });
   }
 
-  entries.push({ name: "You", elo: playerElo, isYou: true });
+  entries.push({ name: playerLabel, elo: playerElo, isYou: true });
   entries.sort((a, b) => b.elo - a.elo);
 
   return entries;
 }
 
-export function GeoProfileScreen({ elo, onBack }: GeoProfileScreenProps) {
+export function GeoProfileScreen({ elo, onBack, authUser, setAuthUser }: GeoProfileScreenProps) {
   const [stats, setStats] = useState<PlayerStats | null>(null);
   const [loaded, setLoaded] = useState(false);
 
   const rank = getRankForElo(elo);
   const progress = getRankProgress(elo);
   const nextRank = getNextRank(elo);
-  const leaderboard = generateLeaderboard(elo);
+  const leaderboard = generateLeaderboard(elo, authUser?.name ?? "You");
 
   useEffect(() => {
     setStats(loadPlayerStats());
@@ -146,7 +150,18 @@ export function GeoProfileScreen({ elo, onBack }: GeoProfileScreenProps) {
           boxShadow: `0 0 20px ${rank.color}33`,
           marginBottom: 8
         }}>
-          {rank.icon}
+          {authUser?.avatarUrl ? (
+            <img
+              src={authUser.avatarUrl}
+              alt={authUser.name}
+              style={{
+                width: "100%",
+                height: "100%",
+                borderRadius: "50%",
+                objectFit: "cover"
+              }}
+            />
+          ) : rank.icon}
         </div>
 
         {/* Username */}
@@ -158,7 +173,18 @@ export function GeoProfileScreen({ elo, onBack }: GeoProfileScreenProps) {
           letterSpacing: 0.5,
           marginBottom: 4
         }}>
-          {stats?.totalSessions ? "Player" : "New Player"}
+          {authUser?.name ?? (stats?.totalSessions ? "Guest Player" : "New Player")}
+        </div>
+
+        <div
+          style={{
+            marginBottom: 10,
+            fontSize: 13,
+            color: authUser ? "rgba(255,255,255,0.58)" : "rgba(255,255,255,0.34)",
+            letterSpacing: 0.3
+          }}
+        >
+          {authUser?.email ?? "No Google account linked on this device yet."}
         </div>
 
         {/* ELO + Rank */}
@@ -218,6 +244,26 @@ export function GeoProfileScreen({ elo, onBack }: GeoProfileScreenProps) {
             <span>{rank.min}</span>
             <span>{nextRank ? `${nextRank.name} at ${nextRank.min}` : "Max Rank"}</span>
           </div>
+        </div>
+
+        <div
+          style={{
+            width: "100%",
+            maxWidth: 360,
+            marginBottom: 24,
+            animation: loaded ? "gs-profile-slideUp 0.5s 0.16s cubic-bezier(0.25,0.46,0.45,0.94) both" : "none"
+          }}
+        >
+          <GoogleAuthPanel
+            user={authUser}
+            setUser={setAuthUser}
+            title={authUser ? "Account status" : "Sign in with Google"}
+            subtitle={
+              authUser
+                ? "Your local GeoSwipe profile is currently linked to this Google account."
+                : "The schema is ready for Google-backed players, but this repo still needs a real backend to persist them."
+            }
+          />
         </div>
 
         {/* Stats row */}
