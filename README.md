@@ -24,7 +24,7 @@ npm run dev
 Vite will print the local URL, usually `http://localhost:5173`.
 
 ## Environment
-Copy `.env.example` to `.env` and set the keys you need:
+If `.env` already exists, update it. Otherwise copy `.env.example` to `.env` and set the keys you need:
 ```bash
 VITE_GOOGLE_STREET_VIEW_API_KEY=...
 VITE_GOOGLE_CLIENT_ID=...
