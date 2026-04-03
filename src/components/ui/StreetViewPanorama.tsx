@@ -151,7 +151,7 @@ export function StreetViewPanorama({ media, alt, interactive }: StreetViewPanora
       cancelled = true;
       if (giveUpTimer !== null) window.clearTimeout(giveUpTimer);
       listeners.forEach((l) => l.remove?.());
-      if (window.google?.maps.event?.clearInstanceListeners && panoramaRef.current) {
+      if (window.google?.maps?.event?.clearInstanceListeners && panoramaRef.current) {
         window.google.maps.event.clearInstanceListeners(panoramaRef.current);
       }
       panoramaRef.current = null;

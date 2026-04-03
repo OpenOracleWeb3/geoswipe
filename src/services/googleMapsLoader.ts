@@ -1,7 +1,11 @@
 type GoogleMapsApi = typeof google;
-type GoogleMapsWindow = Window & typeof globalThis & { google?: GoogleMapsApi };
+type GoogleMapsWindow = Window & typeof globalThis & {
+  google?: GoogleMapsApi;
+  __geoswipeGoogleMapsLoaded?: () => void;
+};
 
 const GOOGLE_MAPS_SCRIPT_ID = "geoswipe-google-maps-js";
+const GOOGLE_MAPS_CALLBACK = "__geoswipeGoogleMapsLoaded";
 const GOOGLE_MAPS_KEY = (import.meta as ImportMeta & { env?: Record<string, string | undefined> }).env
   ?.VITE_GOOGLE_STREET_VIEW_API_KEY;
 
@@ -16,6 +20,7 @@ function buildGoogleMapsScriptUrl(apiKey: string): string {
   url.searchParams.set("key", apiKey);
   url.searchParams.set("v", "weekly");
   url.searchParams.set("loading", "async");
+  url.searchParams.set("callback", GOOGLE_MAPS_CALLBACK);
   return url.toString();
 }
 
@@ -39,26 +44,46 @@ export function loadGoogleMapsApi(): Promise<GoogleMapsApi> {
   }
 
   googleMapsPromise = new Promise<GoogleMapsApi>((resolve, reject) => {
+    let fallbackTimer: number | null = null;
+
+    const cleanup = () => {
+      const cleanupWindow = getGoogleMapsWindow();
+      delete cleanupWindow[GOOGLE_MAPS_CALLBACK];
+      if (fallbackTimer !== null) {
+        window.clearTimeout(fallbackTimer);
+        fallbackTimer = null;
+      }
+    };
+
     const completeLoad = () => {
       const loadedWindow = getGoogleMapsWindow();
       if (loadedWindow.google?.maps) {
+        cleanup();
         resolve(loadedWindow.google);
         return;
       }
 
+      cleanup();
       googleMapsPromise = null;
       reject(new Error("Google Maps loaded without the maps namespace."));
     };
 
     const failLoad = () => {
+      cleanup();
       googleMapsPromise = null;
       reject(new Error("Google Maps failed to load."));
     };
 
     const existingScript = document.getElementById(GOOGLE_MAPS_SCRIPT_ID) as HTMLScriptElement | null;
     if (existingScript) {
-      existingScript.addEventListener("load", completeLoad, { once: true });
+      if (googleWindow.google?.maps) {
+        completeLoad();
+        return;
+      }
+
+      googleWindow[GOOGLE_MAPS_CALLBACK] = completeLoad;
       existingScript.addEventListener("error", failLoad, { once: true });
+      fallbackTimer = window.setTimeout(failLoad, 10000);
       return;
     }
 
@@ -67,8 +92,10 @@ export function loadGoogleMapsApi(): Promise<GoogleMapsApi> {
     script.src = buildGoogleMapsScriptUrl(GOOGLE_MAPS_KEY);
     script.async = true;
     script.defer = true;
-    script.addEventListener("load", completeLoad, { once: true });
+
+    googleWindow[GOOGLE_MAPS_CALLBACK] = completeLoad;
     script.addEventListener("error", failLoad, { once: true });
+    fallbackTimer = window.setTimeout(failLoad, 10000);
     document.head.appendChild(script);
   });
 
