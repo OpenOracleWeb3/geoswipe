@@ -1,0 +1,11 @@
+services:
+  - type: web
+    name: geoswipe
+    runtime: static
+    buildCommand: npm ci && npm run build
+    staticPublishPath: dist
+    envVars:
+      - key: VITE_GOOGLE_STREET_VIEW_API_KEY
+        sync: false
+      - key: VITE_GOOGLE_CLIENT_ID
+        sync: false

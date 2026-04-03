@@ -46,6 +46,15 @@ Once `npm install` has been run (the new Capacitor dependencies require network 
 
 `cap:sync` must be rerun whenever the web app changes before rebuilding the native binary.
 
+## Render
+This repo now includes [render.yaml](./render.yaml) for deploying GeoSwipe as a Render static site.
+
+Expected Render environment variables:
+- `VITE_GOOGLE_STREET_VIEW_API_KEY`
+- `VITE_GOOGLE_CLIENT_ID`
+
+Because those are secrets/runtime config, the Blueprint marks them with `sync: false`. Set the actual values in the Render dashboard for the service, then redeploy.
+
 ## Current game model
 - 20 rounds per session
 - 9s per round
