@@ -1,6 +1,6 @@
-import { useState, useEffect, type Dispatch, type SetStateAction } from "react";
+import { useState, useEffect } from "react";
 import { GoogleAuthPanel } from "../auth/GoogleAuthPanel";
-import type { GoogleAuthUser } from "../../services/googleIdentity";
+import type { GoogleAuthUser, GoogleSignInPayload } from "../../services/googleIdentity";
 
 const RANKS = [
   { name: "Bronze", min: 0, max: 799, color: "#cd7f32", icon: "\uD83E\uDD49" },
@@ -73,10 +73,11 @@ interface GeoSoloLobbyProps {
   onBack: () => void;
   elo: number;
   authUser: GoogleAuthUser | null;
-  setAuthUser: Dispatch<SetStateAction<GoogleAuthUser | null>>;
+  onGoogleSignIn: (payload: GoogleSignInPayload) => Promise<void>;
+  onGoogleSignOut: () => Promise<void>;
 }
 
-export function GeoSoloLobby({ onPlay, onBack, elo, authUser, setAuthUser }: GeoSoloLobbyProps) {
+export function GeoSoloLobby({ onPlay, onBack, elo, authUser, onGoogleSignIn, onGoogleSignOut }: GeoSoloLobbyProps) {
   const [loaded, setLoaded] = useState(false);
 
   const rank = getRank(elo);
@@ -452,12 +453,13 @@ export function GeoSoloLobby({ onPlay, onBack, elo, authUser, setAuthUser }: Geo
           <GoogleAuthPanel
             compact
             user={authUser}
-            setUser={setAuthUser}
+            onSignIn={onGoogleSignIn}
+            onSignOut={onGoogleSignOut}
             title={authUser ? "Account connected" : "Connect Google"}
             subtitle={
               authUser
-                ? "Runs on this device now have a linked Google identity."
-                : "Attach this device profile before the real server-side account sync lands."
+                ? "Runs on this device are attached to your synced account."
+                : "Connect Google before you jump into a run."
             }
           />
         </div>

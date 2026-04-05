@@ -11,7 +11,7 @@ interface StreetViewPanoramaProps {
 const PANORAMA_OPTIONS: google.maps.StreetViewPanoramaOptions = {
   addressControl: false,
   clickToGo: true,
-  disableDefaultUI: false,
+  disableDefaultUI: true,
   enableCloseButton: false,
   fullscreenControl: false,
   linksControl: true,
@@ -19,7 +19,7 @@ const PANORAMA_OPTIONS: google.maps.StreetViewPanoramaOptions = {
   motionTrackingControl: false,
   panControl: false,
   showRoadLabels: false,
-  zoomControl: true
+  zoomControl: false
 };
 
 export function StreetViewPanorama({ media, alt, interactive }: StreetViewPanoramaProps) {

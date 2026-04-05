@@ -1,19 +1,21 @@
 import { AlertCircle, LogOut, ShieldCheck, UserCircle2 } from "lucide-react";
-import { useEffect, useRef, useState, type Dispatch, type SetStateAction } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
-  clearStoredGoogleAuthUser,
   disableGoogleAutoSelect,
   isGoogleAuthConfigured,
   renderGoogleSignInButton,
+  type GoogleSignInPayload,
   type GoogleAuthUser
 } from "../../services/googleIdentity";
 
 interface GoogleAuthPanelProps {
   user: GoogleAuthUser | null;
-  setUser: Dispatch<SetStateAction<GoogleAuthUser | null>>;
+  onSignIn: (payload: GoogleSignInPayload) => Promise<void>;
+  onSignOut: () => Promise<void>;
   compact?: boolean;
   title?: string;
   subtitle?: string;
+  footnote?: string | null;
 }
 
 function getInitials(name: string): string {
@@ -26,10 +28,12 @@ function getInitials(name: string): string {
 
 export function GoogleAuthPanel({
   user,
-  setUser,
+  onSignIn,
+  onSignOut,
   compact = false,
   title = "Connect Google",
-  subtitle = "Attach this device profile to a Google identity."
+  subtitle = "Attach this device profile to a Google identity.",
+  footnote = null
 }: GoogleAuthPanelProps) {
   const buttonRef = useRef<HTMLDivElement | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -53,14 +57,27 @@ export function GoogleAuthPanel({
 
     void renderGoogleSignInButton({
       parent: buttonRoot,
-      onAuthenticated: (nextUser) => {
+      onCredential: (payload) => {
         if (cancelled) {
           return;
         }
 
-        setUser(nextUser);
-        setIsLoading(false);
+        setIsLoading(true);
         setError(null);
+
+        void onSignIn(payload)
+          .then(() => {
+            if (!cancelled) {
+              setIsLoading(false);
+              setError(null);
+            }
+          })
+          .catch((nextError) => {
+            if (!cancelled) {
+              setIsLoading(false);
+              setError(nextError instanceof Error ? nextError.message : "Google sign-in failed.");
+            }
+          });
       }
     })
       .then(() => {
@@ -81,13 +98,21 @@ export function GoogleAuthPanel({
         buttonRoot.innerHTML = "";
       }
     };
-  }, [setUser, user]);
+  }, [onSignIn, user]);
 
-  const handleSignOut = () => {
+  const handleSignOut = async () => {
     disableGoogleAutoSelect();
-    clearStoredGoogleAuthUser();
-    setUser(null);
+    setIsLoading(true);
     setError(null);
+
+    try {
+      await onSignOut();
+      setError(null);
+    } catch (nextError) {
+      setError(nextError instanceof Error ? nextError.message : "Sign out failed.");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const containerStyle = {
@@ -156,6 +181,7 @@ export function GoogleAuthPanel({
           <button
             type="button"
             onClick={handleSignOut}
+            disabled={isLoading}
             style={{
               flex: "0 0 auto",
               minHeight: compact ? 40 : 44,
@@ -214,9 +240,11 @@ export function GoogleAuthPanel({
         ) : null}
       </div>
 
-      <div style={{ marginTop: 10, fontSize: 11, letterSpacing: 0.3, color: "rgba(255,255,255,0.42)" }}>
-        Gameplay still works in guest mode. This frontend repo does not yet have a backend session exchange.
-      </div>
+      {footnote ? (
+        <div style={{ marginTop: 10, fontSize: 11, letterSpacing: 0.3, color: "rgba(255,255,255,0.42)" }}>
+          {footnote}
+        </div>
+      ) : null}
     </div>
   );
 }

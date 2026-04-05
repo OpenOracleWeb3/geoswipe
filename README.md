@@ -21,39 +21,79 @@ npm install
 npm run dev
 ```
 
-Vite will print the local URL, usually `http://localhost:5173`.
+`npm run dev` starts both services:
+- API server: `http://127.0.0.1:3001`
+- Vite app: `http://127.0.0.1:4175`
 
 ## Environment
 If `.env` already exists, update it. Otherwise copy `.env.example` to `.env` and set the keys you need:
 ```bash
+DATABASE_URL=...
+SESSION_SECRET=...
+CORS_ALLOWED_ORIGINS=...
+GOOGLE_CLIENT_ID=...
 VITE_GOOGLE_STREET_VIEW_API_KEY=...
 VITE_GOOGLE_CLIENT_ID=...
+VITE_API_BASE_URL=
 ```
+
+`DATABASE_URL` points to your Render Postgres database.
+
+`SESSION_SECRET` signs the HTTP-only session cookie used by the Node API.
+
+`CORS_ALLOWED_ORIGINS` is a comma-separated allowlist for native/mobile callers such as `capacitor://localhost`.
+
+`GOOGLE_CLIENT_ID` is the server-side audience the backend verifies against. For a web-only build it can match `VITE_GOOGLE_CLIENT_ID`. For a native iOS Google flow later, set this to the backend/server client ID used by the native SDK.
 
 `VITE_GOOGLE_STREET_VIEW_API_KEY` enables Street View metadata + panorama loading.
 
-`VITE_GOOGLE_CLIENT_ID` enables the client-side Google sign-in UI now wired into the home screen, solo lobby, profile screen, and in-run menu.
+`VITE_GOOGLE_CLIENT_ID` enables the web Google sign-in button.
 
-Important: this repo is still frontend-only. Google sign-in currently attaches a local device profile to a Google identity in the browser, but there is no backend token exchange or database persistence yet.
+`VITE_API_BASE_URL` is blank for same-origin web deploys. For bundled Capacitor builds it should point at the live backend, for example `https://geoswipe-app.onrender.com`.
+
+On backend boot, GeoSwipe applies every SQL file in [`schema`](./schema) in order and records them in `schema_migrations`.
 
 ## Desktop via Capacitor
 
 Once `npm install` has been run (the new Capacitor dependencies require network access), you can bootstrap the native shell and copy the web build into it:
 
 1. `npm run cap:sync` (runs the Vite build and syncs `dist/` into the native workspace)
-2. `npx cap add macos`/`npx cap add windows` (run once to graft the native projects)
-3. `npm run cap:open:macos` or `npm run cap:open:windows` to open the platform workspace in Xcode or Visual Studio
+2. `npx cap add ios`/`npx cap add macos`/`npx cap add windows` (run once per platform)
+3. `npm run cap:open:ios`, `npm run cap:open:macos`, or `npm run cap:open:windows`
 
 `cap:sync` must be rerun whenever the web app changes before rebuilding the native binary.
 
+## iOS notes
+
+The repo now includes an `ios/` Capacitor project scaffold. That gets the native workspace created, but it is not the same thing as being App Store ready.
+
+Current state:
+- the game/session data now persists to Postgres through the Node API
+- guest accounts are preserved server-side and are merged into a linked Google account when the user signs in later
+- the schema supports multiple linked identities through `player_identities`, which is needed before Apple sign-in can coexist with Google
+
+Still required before App Store submission:
+- replace the web-only Google Identity button with a native iOS sign-in flow
+- add Sign in with Apple if Google sign-in remains a primary login option
+- configure native bundle IDs, app icons, launch assets, privacy strings, and App Store metadata
+- test the live Render API from the Capacitor shell using `VITE_API_BASE_URL` and `CORS_ALLOWED_ORIGINS`
+
 ## Render
-This repo now includes [render.yaml](./render.yaml) for deploying GeoSwipe as a Render static site.
+This repo now includes [render.yaml](./render.yaml) for deploying GeoSwipe as a Node web service with a managed Render Postgres database.
 
 Expected Render environment variables:
+- `DATABASE_URL` from the managed `geoswipe-db`
+- `SESSION_SECRET`
+- `CORS_ALLOWED_ORIGINS`
+- `GOOGLE_CLIENT_ID`
 - `VITE_GOOGLE_STREET_VIEW_API_KEY`
 - `VITE_GOOGLE_CLIENT_ID`
 
-Because those are secrets/runtime config, the Blueprint marks them with `sync: false`. Set the actual values in the Render dashboard for the service, then redeploy.
+The Blueprint now provisions:
+- `geoswipe-app` as the Node web service
+- `geoswipe-db` as the managed Postgres instance
+
+The Google/CORS env vars remain `sync: false`, so set their real values in the Render dashboard before deploying.
 
 ## Current game model
 - 20 rounds per session
@@ -63,8 +103,9 @@ Because those are secrets/runtime config, the Blueprint marks them with `sync: f
 - Easy rounds use obvious contrast pairs
 
 ## Database schema
-The repo includes a Postgres schema in `schema/001_initial.sql` for future backend work. It defines:
+The repo uses the Postgres schema in `schema/001_initial.sql` and `schema/002_player_identities.sql`. It defines:
 - `players`
+- `player_identities`
 - `sessions`
 - `round_outcomes`
 - `elo_history`
@@ -73,6 +114,11 @@ The repo includes a Postgres schema in `schema/001_initial.sql` for future backe
 - `leaderboard_snapshots`
 - `country_stats`
 
-That schema is not connected to the shipped app yet.
+The active app now writes players, linked identities, completed sessions, round outcomes, ELO history, and country performance into Postgres through the Node API.
+
+Data preservation rules:
+- guest progress is written to Postgres immediately
+- when a guest later links Google, session history/ELO/country stats merge into that permanent account
+- the frontend stores only a portable session token locally; scores and profile state are loaded from the backend snapshot
 
 See [`GEOSWIPE_PLAN.md`](./GEOSWIPE_PLAN.md) for full product/system roadmap.

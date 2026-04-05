@@ -1,9 +1,5 @@
 /**
- * Ranking engine — ELO-style rating persisted to localStorage.
- *
- * Tracks a single global ELO plus per-category ELOs. After each session,
- * the player's ELO shifts based on accuracy, difficulty mix, and whether
- * they beat the rival.
+ * Ranking helpers shared by the frontend and the API contract.
  *
  * ELO starts at 500. The system is calibrated so:
  *   - A 50% accuracy session at medium difficulty → ~0 change
@@ -138,10 +134,6 @@ export function calculateSwipeElo({ correct, timedOut, difficulty, streak, curre
   return Math.round((baseGain + streakExtra) * kFactor);
 }
 
-// ── Persistence ───────────────────────────────────────────────────
-
-const STORAGE_KEY = "geoswipe:ranking:v1";
-
 export interface PlayerStats {
   globalElo: number;
   categoryElo: Record<CategoryMode, number>;
@@ -164,109 +156,4 @@ export interface SessionHistoryEntry {
   eloAfter: number;
   eloDelta: number;
   won: boolean;
-}
-
-const DEFAULT_STATS: PlayerStats = {
-  globalElo: 500,
-  categoryElo: {
-    continents: 500,
-    countries: 500,
-    cities: 500,
-    worldwide: 500
-  },
-  totalSessions: 0,
-  totalCorrect: 0,
-  totalRounds: 0,
-  bestStreak: 0,
-  wins: 0,
-  losses: 0,
-  history: []
-};
-
-const MAX_HISTORY = 50;
-
-export function loadPlayerStats(): PlayerStats {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return { ...DEFAULT_STATS, categoryElo: { ...DEFAULT_STATS.categoryElo } };
-    const parsed = JSON.parse(raw) as Partial<PlayerStats>;
-    return {
-      ...DEFAULT_STATS,
-      ...parsed,
-      categoryElo: { ...DEFAULT_STATS.categoryElo, ...parsed.categoryElo }
-    };
-  } catch {
-    return { ...DEFAULT_STATS, categoryElo: { ...DEFAULT_STATS.categoryElo } };
-  }
-}
-
-function savePlayerStats(stats: PlayerStats): void {
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(stats));
-  } catch {
-    // Storage full or unavailable — silently fail
-  }
-}
-
-/**
- * Record a completed session. Updates both global and category ELO,
- * appends to history, and persists to localStorage.
- *
- * Returns the ELO delta so the summary screen can display it.
- */
-export function recordSession(summary: SessionSummary, category: CategoryMode): {
-  stats: PlayerStats;
-  globalDelta: number;
-  categoryDelta: number;
-} {
-  const stats = loadPlayerStats();
-
-  // Global ELO update
-  const globalResult = calculateEloUpdate({
-    summary,
-    category,
-    currentElo: stats.globalElo
-  });
-
-  // Category ELO update
-  const categoryResult = calculateEloUpdate({
-    summary,
-    category,
-    currentElo: stats.categoryElo[category]
-  });
-
-  const entry: SessionHistoryEntry = {
-    timestamp: new Date().toISOString(),
-    category,
-    playerScore: summary.playerScore,
-    rivalScore: summary.rivalScore,
-    accuracy: summary.accuracy,
-    eloBefore: stats.globalElo,
-    eloAfter: globalResult.newElo,
-    eloDelta: globalResult.delta,
-    won: summary.playerWon
-  };
-
-  const updatedStats: PlayerStats = {
-    globalElo: globalResult.newElo,
-    categoryElo: {
-      ...stats.categoryElo,
-      [category]: categoryResult.newElo
-    },
-    totalSessions: stats.totalSessions + 1,
-    totalCorrect: stats.totalCorrect + summary.correctCount,
-    totalRounds: stats.totalRounds + 20,
-    bestStreak: Math.max(stats.bestStreak, summary.maxStreak),
-    wins: stats.wins + (summary.playerWon ? 1 : 0),
-    losses: stats.losses + (summary.playerWon ? 0 : 1),
-    history: [entry, ...stats.history].slice(0, MAX_HISTORY)
-  };
-
-  savePlayerStats(updatedStats);
-
-  return {
-    stats: updatedStats,
-    globalDelta: globalResult.delta,
-    categoryDelta: categoryResult.delta
-  };
 }

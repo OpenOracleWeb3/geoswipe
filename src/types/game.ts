@@ -154,8 +154,11 @@ export interface RoundOutcome {
   selectedCountry: string | null;
   correctAnswer: string;
   correctCountry: string;
+  timeRemainingSec: number;
   scoreBreakdown: RoundScoreBreakdown;
   rival: RivalRoundResult;
+  eloDelta: number;
+  eloAfter: number;
   playerScoreAfter: number;
   rivalScoreAfter: number;
   streakAfter: number;

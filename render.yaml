@@ -1,11 +1,32 @@
 services:
   - type: web
-    name: geoswipe
-    runtime: static
+    name: geoswipe-app
+    runtime: node
+    plan: starter
     buildCommand: npm ci && npm run build
-    staticPublishPath: dist
+    startCommand: npm run start
+    healthCheckPath: /api/health
     envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        fromDatabase:
+          name: geoswipe-db
+          property: connectionString
+      - key: SESSION_SECRET
+        generateValue: true
+      - key: CORS_ALLOWED_ORIGINS
+        sync: false
+      - key: GOOGLE_CLIENT_ID
+        sync: false
       - key: VITE_GOOGLE_STREET_VIEW_API_KEY
         sync: false
       - key: VITE_GOOGLE_CLIENT_ID
         sync: false
+
+databases:
+  - name: geoswipe-db
+    plan: starter
+    databaseName: geoswipe
+    user: geoswipe
+    ipAllowList: []

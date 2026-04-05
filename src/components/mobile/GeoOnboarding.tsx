@@ -24,8 +24,8 @@ const steps = [
   },
   {
     icon: TimerReset,
-    title: "Misses trigger context",
-    body: "Wrong calls open a short reassess break with the right answer, clue chips, and extra context images before you continue."
+    title: "Misses keep the pace",
+    body: "Wrong reads reveal the correct location in the result flash, then the next Street View loads right away."
   }
 ];
 

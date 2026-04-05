@@ -1,10 +1,9 @@
 import { AnimatePresence, motion, useMotionValue, useTransform, type PanInfo } from "framer-motion";
-import { ArrowBigLeft, ArrowBigRight, CircleHelp, MapPin, Sparkles, TrendingDown, TrendingUp } from "lucide-react";
+import { ArrowBigLeft, ArrowBigRight, CircleHelp, Sparkles } from "lucide-react";
 import { useRef, useState, type CSSProperties } from "react";
 import { getCountryFlagUrl } from "../../data/countryFlags";
 import type { GeoRound, RoundMedia, RoundOutcome, SwipeDirection } from "../../types/game";
 import { StreetViewPanorama } from "../ui/StreetViewPanorama";
-import { StreetViewPullMap } from "../ui/StreetViewPullMap";
 
 interface GeoChoiceCardProps {
   round: GeoRound;
@@ -44,10 +43,9 @@ export function GeoChoiceCard({
   onGuess
 }: GeoChoiceCardProps) {
   const [swipeDirection, setSwipeDirection] = useState<SwipeDirection | null>(null);
-  const [exploreMode, setExploreMode] = useState(false);
-  const [showPullMap, setShowPullMap] = useState(false);
   const swipeDirectionRef = useRef<SwipeDirection | null>(null);
   const isStreetView = media?.kind === "streetview" && Boolean(media.panoId || media.coordinates);
+  const panoMode = isStreetView;
 
   const x = useMotionValue(0);
   const rotate = useTransform(x, [-200, 0, 200], [-25, 0, 25]);
@@ -66,6 +64,29 @@ export function GeoChoiceCard({
   const isCorrect = resultOutcome?.correct ?? false;
   const isWrong = resultOutcome != null && !resultOutcome.correct;
   const resultTone = isCorrect ? "ok" : resultOutcome?.timedOut ? "timeout" : isWrong ? "bad" : null;
+  const resultKicker = resultOutcome
+    ? resultOutcome.correct
+      ? "Locked in"
+      : resultOutcome.timedOut
+        ? "Time ran out"
+        : "Missed it"
+    : null;
+  const resultHeadline = resultOutcome
+    ? resultOutcome.correct
+      ? resultOutcome.correctAnswer
+      : `This was ${resultOutcome.correctAnswer}`
+    : null;
+  const resultCaption = resultOutcome
+    ? resultOutcome.correct
+      ? `Clean read. ${resultOutcome.scoreBreakdown.delta >= 0 ? `+${resultOutcome.scoreBreakdown.delta}` : resultOutcome.scoreBreakdown.delta} points added.`
+      : resultOutcome.timedOut
+        ? "No answer locked before the timer hit zero."
+        : `You picked ${resultOutcome.selectedAnswer}.`
+    : null;
+  const resultScoreLabel = resultOutcome
+    ? `${resultOutcome.scoreBreakdown.delta >= 0 ? "+" : ""}${resultOutcome.scoreBreakdown.delta} pts`
+    : null;
+  const resultEloLabel = eloDelta != null ? `${eloDelta >= 0 ? "+" : ""}${eloDelta} ELO` : null;
   const frameStyle = {
     "--gs-load-progress": `${Math.max(0, Math.min(100, Math.round(loadingProgress)))}%`,
     "--gs-timer-progress": `${Math.max(0, Math.min(100, Math.round((timerProgress ?? 1) * 100)))}%`
@@ -134,7 +155,7 @@ export function GeoChoiceCard({
         </div>
       ) : null}
 
-      {!exploreMode ? (
+      {!panoMode ? (
         <>
           <motion.div
             className={`gs-direction-hint gs-direction-left ${minimal ? "minimal" : ""}`}
@@ -156,15 +177,15 @@ export function GeoChoiceCard({
 
 
       <motion.article
-        className={`gs-choice-card ${swipeDirection ? `gs-choice-card-swipe-${swipeDirection}` : ""} ${exploreMode ? "explore-mode" : ""}`}
-        drag={disabled || exploreMode ? false : "x"}
+        className={`gs-choice-card ${swipeDirection ? `gs-choice-card-swipe-${swipeDirection}` : ""} ${panoMode ? "explore-mode" : ""}`}
+        drag={disabled || panoMode ? false : "x"}
         dragConstraints={{ left: 0, right: 0 }}
         dragElastic={0.7}
         dragMomentum={true}
         style={{ x, rotate, opacity }}
         onDrag={handleDrag}
         onDragEnd={handleDragEnd}
-        whileTap={{ scale: disabled || exploreMode ? 1 : 0.985 }}
+        whileTap={{ scale: disabled || panoMode ? 1 : 0.985 }}
       >
         {/* ── Matt's ELO bar + round counter ── */}
         <header className="gs-card-header" style={{
@@ -221,39 +242,9 @@ export function GeoChoiceCard({
           </div>
         </header>
 
-        {isStreetView && !resultOutcome ? (
-          <div className="gs-media-toolbar">
-            <button
-              type="button"
-              className="gs-media-tool"
-              onClick={() => setShowPullMap(true)}
-            >
-              <MapPin size={15} />
-              <span>Data Map</span>
-            </button>
-
-            <button
-              type="button"
-              className={`gs-media-tool gs-media-tool-primary ${exploreMode ? "active" : ""}`}
-              onClick={() => {
-                setSwipeDirection(null);
-                swipeDirectionRef.current = null;
-                setExploreMode((value) => !value);
-              }}
-              aria-label={exploreMode ? "Exit Street View panorama" : "Open Street View panorama"}
-              aria-pressed={exploreMode}
-            >
-              <span className="gs-media-tool-copy">
-                <strong>{exploreMode ? "Exit Street View" : "Street View"}</strong>
-                <span>{exploreMode ? "Back to swipe mode" : "Tap to enter panorama"}</span>
-              </span>
-            </button>
-          </div>
-        ) : null}
-
         {/* ── Image area ── */}
         <div className={`gs-image-frame ${isLoadingImage ? "loading" : hasTimer ? "timed" : "static"}`} style={frameStyle}>
-          <div className={`gs-image-shell ${minimal ? "minimal" : ""} ${exploreMode ? "interactive" : ""}`}>
+          <div className={`gs-image-shell ${minimal ? "minimal" : ""} ${panoMode ? "interactive" : ""}`}>
             {isLoadingImage ? (
                 <div className="gs-image-loading">
                   <Sparkles size={18} />
@@ -261,127 +252,39 @@ export function GeoChoiceCard({
                   <span>Loading Street View...</span>
                 </div>
               ) : media?.kind === "streetview" ? (
-              <StreetViewPanorama media={media} alt="Geography challenge" interactive={exploreMode} />
+              <StreetViewPanorama media={media} alt="Geography challenge" interactive={panoMode} />
             ) : null}
 
-            {exploreMode && !resultOutcome ? (
-              <div className="gs-panorama-guide">
-                <span className="gs-panorama-guide-pill">Street View active</span>
-                <strong>Look around, then tap your choice below.</strong>
-              </div>
-            ) : null}
-
-            {/* ── Matt's result burst ── */}
             <AnimatePresence>
               {resultOutcome && resultTone ? (
                 <motion.div
                   key={`${round.id}:result`}
                   className={`gs-result-burst ${resultTone}`}
-                  initial={{ opacity: 0, scale: 0.7 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  exit={{ opacity: 0, scale: 0.9 }}
-                  transition={{ type: "spring", stiffness: 400, damping: 25, mass: 0.8 }}
-                  style={{
-                    position: "absolute",
-                    inset: 0,
-                    display: "flex",
-                    flexDirection: "column",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    zIndex: 20,
-                    background: isCorrect
-                      ? "radial-gradient(ellipse at center, rgba(46,204,113,0.85) 0%, rgba(46,204,113,0.65) 100%)"
-                      : "radial-gradient(ellipse at center, rgba(231,76,60,0.85) 0%, rgba(231,76,60,0.65) 100%)",
-                    backdropFilter: "blur(8px)"
-                  }}
+                  initial={{ opacity: 0, y: 32 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: 24 }}
+                  transition={{ type: "spring", stiffness: 360, damping: 28, mass: 0.95 }}
                 >
-                  {/* Big result word */}
                   <motion.div
-                    initial={{ scale: 0.5, y: 20 }}
-                    animate={{ scale: 1, y: 0 }}
-                    transition={{ type: "spring", stiffness: 500, damping: 20, delay: 0.05 }}
-                    style={{
-                      fontFamily: "'Dela Gothic One', 'Outfit', sans-serif",
-                      fontSize: "clamp(36px, 10vw, 56px)",
-                      fontWeight: 900,
-                      color: "#fff",
-                      textTransform: "uppercase",
-                      letterSpacing: 4,
-                      textShadow: "0 4px 20px rgba(0,0,0,0.3)",
-                      lineHeight: 1
-                    }}
+                    className="gs-result-burst-card"
+                    initial={{ opacity: 0, y: 20, scale: 0.96 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: 18, scale: 0.97 }}
+                    transition={{ delay: 0.04, duration: 0.24, ease: "easeOut" }}
                   >
-                    {isCorrect ? "CORRECT" : resultOutcome.timedOut ? "TIME UP" : "WRONG"}
+                    <div className="gs-result-burst-header">
+                      {resultKicker ? <span className="gs-result-burst-kicker">{resultKicker}</span> : null}
+                      {resultEloLabel ? <span className="gs-result-burst-elo">{resultEloLabel}</span> : null}
+                    </div>
+
+                    {resultHeadline ? <strong className="gs-result-burst-title">{resultHeadline}</strong> : null}
+                    {resultCaption ? <p className="gs-result-burst-body">{resultCaption}</p> : null}
+
+                    <div className="gs-result-burst-meta">
+                      {resultScoreLabel ? <span className="gs-result-burst-chip">{resultScoreLabel}</span> : null}
+                      {elo != null ? <span className="gs-result-burst-chip">ELO {elo}</span> : null}
+                    </div>
                   </motion.div>
-
-                  {/* ELO update */}
-                  {eloDelta != null && elo != null ? (
-                    <motion.div
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: 0.15, duration: 0.3 }}
-                      style={{
-                        display: "flex",
-                        flexDirection: "column",
-                        alignItems: "center",
-                        gap: 4,
-                        marginTop: 16
-                      }}
-                    >
-                      <div style={{
-                        display: "flex",
-                        alignItems: "center",
-                        gap: 8,
-                        fontFamily: "'JetBrains Mono', monospace",
-                        fontWeight: 700,
-                        fontSize: 22,
-                        color: "#fff"
-                      }}>
-                        <span>ELO: {elo}</span>
-                        {eloDelta >= 0 ? <TrendingUp size={20} /> : <TrendingDown size={20} />}
-                      </div>
-                      <div style={{
-                        fontFamily: "'JetBrains Mono', monospace",
-                        fontWeight: 800,
-                        fontSize: 28,
-                        color: "#fff",
-                        textShadow: "0 2px 12px rgba(0,0,0,0.3)"
-                      }}>
-                        {eloDelta >= 0 ? `+${eloDelta}` : eloDelta}
-                      </div>
-                    </motion.div>
-                  ) : null}
-
-                  {/* Correct answer caption */}
-                  {!isCorrect ? (
-                    <motion.p
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 0.8 }}
-                      transition={{ delay: 0.25 }}
-                      style={{
-                        marginTop: 12,
-                        fontSize: 14,
-                        color: "rgba(255,255,255,0.85)",
-                        fontWeight: 500
-                      }}
-                    >
-                      Correct answer: {resultOutcome.correctAnswer}
-                    </motion.p>
-                  ) : (
-                    <motion.p
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 0.8 }}
-                      transition={{ delay: 0.25 }}
-                      style={{
-                        marginTop: 8,
-                        fontSize: 14,
-                        color: "rgba(255,255,255,0.85)",
-                        fontWeight: 500
-                      }}
-                    >
-                      {resultOutcome.correctAnswer} · +{resultOutcome.scoreBreakdown.delta} pts
-                    </motion.p>
-                  )}
                 </motion.div>
               ) : null}
             </AnimatePresence>
@@ -400,7 +303,7 @@ export function GeoChoiceCard({
         {!minimal ? (
           <section className="gs-choice-copy">
             <span className="gs-choice-kicker">
-              {exploreMode ? "Inspect the pano, then tap your choice" : `Swipe or tap a ${questionLabel}`}
+              {panoMode ? `Tap the ${questionLabel} that fits` : `Swipe or tap a ${questionLabel}`}
             </span>
             <div className="gs-choice-title">
               <CircleHelp size={18} />
@@ -416,14 +319,14 @@ export function GeoChoiceCard({
         ) : null}
 
         {/* ── Option buttons (Matt's pill style) ── */}
-        <footer className={`gs-choice-actions ${minimal ? "minimal" : ""} ${exploreMode ? "pano" : ""}`}>
+        <footer className={`gs-choice-actions ${minimal ? "minimal" : ""} ${panoMode ? "pano" : ""}`}>
           <button
             className={`gs-choice-action gs-choice-action-left ${swipeDirection === "left" ? "active" : ""}`}
             disabled={disabled}
             onClick={() => submitGuess("left")}
           >
             <span className="gs-choice-action-label">
-              {exploreMode ? "Tap to choose" : (
+              {panoMode ? "Tap to choose" : (
                 <>
                   <ArrowBigLeft size={18} />
                   Swipe left
@@ -438,7 +341,7 @@ export function GeoChoiceCard({
             onClick={() => submitGuess("right")}
           >
             <span className="gs-choice-action-label">
-              {exploreMode ? "Tap to choose" : (
+              {panoMode ? "Tap to choose" : (
                 <>
                   Swipe right
                   <ArrowBigRight size={18} />
@@ -449,8 +352,6 @@ export function GeoChoiceCard({
           </button>
         </footer>
       </motion.article>
-
-      {showPullMap ? <StreetViewPullMap round={round} onClose={() => setShowPullMap(false)} /> : null}
     </div>
   );
 }

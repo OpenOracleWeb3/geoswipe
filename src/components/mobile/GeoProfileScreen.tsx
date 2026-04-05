@@ -1,50 +1,42 @@
-import { useState, useEffect, type Dispatch, type SetStateAction } from "react";
+import { useState, useEffect } from "react";
 import { ArrowLeft, Trophy } from "lucide-react";
-import { getRankForElo, getRankProgress, getNextRank, loadPlayerStats, type PlayerStats } from "../../lib/rankingEngine";
+import { getRankForElo, getRankProgress, getNextRank, type PlayerStats } from "../../lib/rankingEngine";
 import { GoogleAuthPanel } from "../auth/GoogleAuthPanel";
-import type { GoogleAuthUser } from "../../services/googleIdentity";
+import type { GoogleAuthUser, GoogleSignInPayload } from "../../services/googleIdentity";
+import type { LeaderboardEntry } from "../../services/backendApi";
 
 interface GeoProfileScreenProps {
   elo: number;
   onBack: () => void;
+  playerLabel: string;
+  playerEmail: string | null;
+  playerAvatarUrl: string | null;
+  stats: PlayerStats | null;
+  leaderboard: LeaderboardEntry[];
   authUser: GoogleAuthUser | null;
-  setAuthUser: Dispatch<SetStateAction<GoogleAuthUser | null>>;
+  onGoogleSignIn: (payload: GoogleSignInPayload) => Promise<void>;
+  onGoogleSignOut: () => Promise<void>;
 }
 
-// Fake leaderboard entries — in production these come from Postgres
-function generateLeaderboard(playerElo: number, playerLabel: string): Array<{ name: string; elo: number; isYou: boolean }> {
-  const names = [
-    "GeoKing99", "MapMaster", "WanderLux", "AtlasAce",
-    "NomadNova", "CompassPro", "TrekStar", "GlobeTrek",
-    "RouteWiz", "TerraPilot", "DriftKing", "PathFinder",
-    "ZoneRunner", "GridLock", "PoiHunter"
-  ];
-
-  const entries: Array<{ name: string; elo: number; isYou: boolean }> = [];
-
-  // Generate players around the user's ELO
-  for (let i = 0; i < names.length; i++) {
-    const offset = Math.floor((i - 7) * 25 + (Math.sin(i * 3.7) * 40));
-    entries.push({ name: names[i], elo: Math.max(0, playerElo + offset), isYou: false });
-  }
-
-  entries.push({ name: playerLabel, elo: playerElo, isYou: true });
-  entries.sort((a, b) => b.elo - a.elo);
-
-  return entries;
-}
-
-export function GeoProfileScreen({ elo, onBack, authUser, setAuthUser }: GeoProfileScreenProps) {
-  const [stats, setStats] = useState<PlayerStats | null>(null);
+export function GeoProfileScreen({
+  elo,
+  onBack,
+  playerLabel,
+  playerEmail,
+  playerAvatarUrl,
+  stats,
+  leaderboard,
+  authUser,
+  onGoogleSignIn,
+  onGoogleSignOut
+}: GeoProfileScreenProps) {
   const [loaded, setLoaded] = useState(false);
 
   const rank = getRankForElo(elo);
   const progress = getRankProgress(elo);
   const nextRank = getNextRank(elo);
-  const leaderboard = generateLeaderboard(elo, authUser?.name ?? "You");
 
   useEffect(() => {
-    setStats(loadPlayerStats());
     setLoaded(true);
   }, []);
 
@@ -150,10 +142,10 @@ export function GeoProfileScreen({ elo, onBack, authUser, setAuthUser }: GeoProf
           boxShadow: `0 0 20px ${rank.color}33`,
           marginBottom: 8
         }}>
-          {authUser?.avatarUrl ? (
+          {playerAvatarUrl ? (
             <img
-              src={authUser.avatarUrl}
-              alt={authUser.name}
+              src={playerAvatarUrl}
+              alt={playerLabel}
               style={{
                 width: "100%",
                 height: "100%",
@@ -173,7 +165,7 @@ export function GeoProfileScreen({ elo, onBack, authUser, setAuthUser }: GeoProf
           letterSpacing: 0.5,
           marginBottom: 4
         }}>
-          {authUser?.name ?? (stats?.totalSessions ? "Guest Player" : "New Player")}
+          {playerLabel}
         </div>
 
         <div
@@ -184,7 +176,7 @@ export function GeoProfileScreen({ elo, onBack, authUser, setAuthUser }: GeoProf
             letterSpacing: 0.3
           }}
         >
-          {authUser?.email ?? "No Google account linked on this device yet."}
+          {playerEmail ?? "Guest profile"}
         </div>
 
         {/* ELO + Rank */}
@@ -256,12 +248,13 @@ export function GeoProfileScreen({ elo, onBack, authUser, setAuthUser }: GeoProf
         >
           <GoogleAuthPanel
             user={authUser}
-            setUser={setAuthUser}
+            onSignIn={onGoogleSignIn}
+            onSignOut={onGoogleSignOut}
             title={authUser ? "Account status" : "Sign in with Google"}
             subtitle={
               authUser
-                ? "Your local GeoSwipe profile is currently linked to this Google account."
-                : "The schema is ready for Google-backed players, but this repo still needs a real backend to persist them."
+                ? "Your GeoSwipe profile is attached to this Google account."
+                : "Sign in to bind this profile to Google."
             }
           />
         </div>
@@ -338,14 +331,14 @@ export function GeoProfileScreen({ elo, onBack, authUser, setAuthUser }: GeoProf
           </div>
 
           <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-            {leaderboard.map((entry, i) => {
-              const position = i + 1;
+            {leaderboard.map((entry) => {
+              const position = entry.rank;
               const isTop3 = position <= 3;
               const medalColor = position === 1 ? "#ffd700" : position === 2 ? "#c0c0c0" : position === 3 ? "#cd7f32" : undefined;
 
               return (
                 <div
-                  key={`${entry.name}-${i}`}
+                  key={`${entry.playerId}-${position}`}
                   style={{
                     display: "flex",
                     alignItems: "center",

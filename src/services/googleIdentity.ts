@@ -6,6 +6,11 @@ export interface GoogleAuthUser {
   avatarUrl?: string;
 }
 
+export interface GoogleSignInPayload {
+  credential: string;
+  user: GoogleAuthUser;
+}
+
 interface GoogleCredentialResponse {
   credential?: string;
   select_by?: string;
@@ -33,7 +38,6 @@ type GoogleIdentityWindow = Window & typeof globalThis & {
 };
 
 const GOOGLE_IDENTITY_SCRIPT_ID = "geoswipe-google-identity";
-const AUTH_STORAGE_KEY = "geoswipe:auth:v1";
 const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID?.trim() ?? "";
 
 let googleIdentityPromise: Promise<GoogleIdentityApi> | null = null;
@@ -52,47 +56,12 @@ function decodeBase64Url(input: string): string {
   );
 }
 
-function parseStoredUser(value: string | null): GoogleAuthUser | null {
-  if (!value) {
-    return null;
-  }
-
-  try {
-    const parsed = JSON.parse(value) as Partial<GoogleAuthUser>;
-    if (parsed.provider !== "google" || !parsed.providerId || !parsed.name || !parsed.email) {
-      return null;
-    }
-
-    return {
-      provider: "google",
-      providerId: parsed.providerId,
-      name: parsed.name,
-      email: parsed.email,
-      avatarUrl: parsed.avatarUrl
-    };
-  } catch {
-    return null;
-  }
-}
-
 export function isGoogleAuthConfigured(): boolean {
   return GOOGLE_CLIENT_ID.length > 0;
 }
 
 export function getGoogleClientId(): string {
   return GOOGLE_CLIENT_ID;
-}
-
-export function loadStoredGoogleAuthUser(): GoogleAuthUser | null {
-  return parseStoredUser(localStorage.getItem(AUTH_STORAGE_KEY));
-}
-
-export function persistGoogleAuthUser(user: GoogleAuthUser): void {
-  localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(user));
-}
-
-export function clearStoredGoogleAuthUser(): void {
-  localStorage.removeItem(AUTH_STORAGE_KEY);
 }
 
 export function decodeGoogleCredential(credential: string): GoogleAuthUser | null {
@@ -184,10 +153,10 @@ export async function loadGoogleIdentityApi(): Promise<GoogleIdentityApi> {
 
 export async function renderGoogleSignInButton({
   parent,
-  onAuthenticated
+  onCredential
 }: {
   parent: HTMLElement;
-  onAuthenticated: (user: GoogleAuthUser) => void;
+  onCredential: (payload: GoogleSignInPayload) => void;
 }): Promise<void> {
   const googleApi = await loadGoogleIdentityApi();
 
@@ -204,8 +173,10 @@ export async function renderGoogleSignInButton({
         return;
       }
 
-      persistGoogleAuthUser(user);
-      onAuthenticated(user);
+      onCredential({
+        credential: response.credential,
+        user
+      });
     }
   });
 
