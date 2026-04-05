@@ -91,7 +91,7 @@ Expected Render environment variables:
 
 The Blueprint now provisions:
 - `geoswipe-app` as the Node web service
-- `geoswipe-db` as the managed Postgres instance
+- `geoswipe-db` as the managed Postgres instance on Render's current `basic_256mb` entry plan
 
 The Google/CORS env vars remain `sync: false`, so set their real values in the Render dashboard before deploying.
 
