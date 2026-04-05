@@ -5,7 +5,7 @@ import { fileURLToPath } from "node:url";
 import { CORS_ALLOWED_ORIGINS, PORT } from "./config.js";
 import { ensureDatabaseReady, withTransaction } from "./db.js";
 import { verifyGoogleCredential } from "./google.js";
-import { buildPlayerSnapshot, createAnonymousPlayer, getOrCreateSessionPlayer, recordCompletedSession, signInWithGooglePlayer } from "./store.js";
+import { buildPlayerSnapshot, completePlayerOnboarding, createAnonymousPlayer, getOrCreateSessionPlayer, recordCompletedSession, signInWithGooglePlayer } from "./store.js";
 import { readSessionPlayerId, SESSION_HEADER_NAME, setSessionCookie } from "./session.js";
 
 const app = express();
@@ -103,6 +103,21 @@ app.post("/api/auth/logout", async (_req, res, next) => {
   try {
     const snapshot = await withTransaction(async (client) => {
       const player = await createAnonymousPlayer(client);
+      return buildPlayerSnapshot(client, player.id);
+    });
+
+    await sendSnapshot(res, snapshot);
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.post("/api/onboarding/complete", async (req, res, next) => {
+  try {
+    const sessionPlayerId = await readSessionPlayerId(req);
+    const snapshot = await withTransaction(async (client) => {
+      const player = await getOrCreateSessionPlayer(client, sessionPlayerId);
+      await completePlayerOnboarding(client, player.id);
       return buildPlayerSnapshot(client, player.id);
     });
 

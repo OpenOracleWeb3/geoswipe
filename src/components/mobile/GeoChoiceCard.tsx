@@ -19,6 +19,10 @@ interface GeoChoiceCardProps {
   modifierLabel?: string;
   elo?: number;
   eloDelta?: number | null;
+  canAdvanceFromResult?: boolean;
+  isPreparingNextStep?: boolean;
+  hasNextRound?: boolean;
+  onAdvanceFromResult?: () => void;
   onGuess: (direction: SwipeDirection) => void;
 }
 
@@ -40,6 +44,10 @@ export function GeoChoiceCard({
   modifierLabel,
   elo,
   eloDelta,
+  canAdvanceFromResult = false,
+  isPreparingNextStep = false,
+  hasNextRound = true,
+  onAdvanceFromResult,
   onGuess
 }: GeoChoiceCardProps) {
   const [swipeDirection, setSwipeDirection] = useState<SwipeDirection | null>(null);
@@ -87,6 +95,14 @@ export function GeoChoiceCard({
     ? `${resultOutcome.scoreBreakdown.delta >= 0 ? "+" : ""}${resultOutcome.scoreBreakdown.delta} pts`
     : null;
   const resultEloLabel = eloDelta != null ? `${eloDelta >= 0 ? "+" : ""}${eloDelta} ELO` : null;
+  const resultAdvanceLabel = hasNextRound ? "Next Round" : "See Results";
+  const resultAdvanceHint = hasNextRound
+    ? isPreparingNextStep
+      ? "Loading the next Street View..."
+      : "Next panorama is ready."
+    : isPreparingNextStep
+      ? "Preparing your final run summary..."
+      : "Run complete. Open the summary.";
   const frameStyle = {
     "--gs-load-progress": `${Math.max(0, Math.min(100, Math.round(loadingProgress)))}%`,
     "--gs-timer-progress": `${Math.max(0, Math.min(100, Math.round((timerProgress ?? 1) * 100)))}%`
@@ -283,6 +299,18 @@ export function GeoChoiceCard({
                     <div className="gs-result-burst-meta">
                       {resultScoreLabel ? <span className="gs-result-burst-chip">{resultScoreLabel}</span> : null}
                       {elo != null ? <span className="gs-result-burst-chip">ELO {elo}</span> : null}
+                    </div>
+
+                    <div className="gs-result-burst-actions">
+                      <p className="gs-result-burst-note">{resultAdvanceHint}</p>
+                      <button
+                        type="button"
+                        className="gs-result-burst-button"
+                        onClick={onAdvanceFromResult}
+                        disabled={!canAdvanceFromResult}
+                      >
+                        {canAdvanceFromResult ? resultAdvanceLabel : "Loading..."}
+                      </button>
                     </div>
                   </motion.div>
                 </motion.div>

@@ -1290,6 +1290,7 @@ button:disabled {
   border: 1px solid rgba(255, 255, 255, 0.16);
   backdrop-filter: blur(22px);
   box-shadow: 0 24px 70px rgba(17, 17, 20, 0.32);
+  pointer-events: auto;
 }
 
 .gs-result-burst.ok .gs-result-burst-card {
@@ -1387,6 +1388,63 @@ button:disabled {
   display: flex;
   flex-wrap: wrap;
   gap: 10px;
+}
+
+.gs-result-burst-actions {
+  display: grid;
+  gap: 10px;
+  margin-top: 2px;
+}
+
+.gs-result-burst-note {
+  margin: 0;
+  font-size: 0.82rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.gs-result-burst.ok .gs-result-burst-note {
+  color: rgba(17, 33, 23, 0.62);
+}
+
+.gs-result-burst.bad .gs-result-burst-note,
+.gs-result-burst.timeout .gs-result-burst-note {
+  color: rgba(255, 242, 238, 0.72);
+}
+
+.gs-result-burst-button {
+  min-height: 54px;
+  border: 0;
+  border-radius: 20px;
+  padding: 0 18px;
+  font-family: "Aeonik TRIAL", "Inter", sans-serif;
+  font-size: 0.92rem;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  transition: transform 160ms ease, box-shadow 160ms ease, opacity 160ms ease;
+}
+
+.gs-result-burst-button:not(:disabled):hover {
+  transform: translateY(-1px);
+}
+
+.gs-result-burst.ok .gs-result-burst-button {
+  background: #15211a;
+  color: #f4fff5;
+  box-shadow: 0 14px 28px rgba(21, 33, 26, 0.18);
+}
+
+.gs-result-burst.bad .gs-result-burst-button,
+.gs-result-burst.timeout .gs-result-burst-button {
+  background: #fff2ee;
+  color: #291418;
+  box-shadow: 0 14px 28px rgba(10, 8, 9, 0.22);
+}
+
+.gs-result-burst-button:disabled {
+  opacity: 0.58;
+  box-shadow: none;
 }
 
 .gs-result-burst-chip {
@@ -2208,6 +2266,11 @@ button:disabled {
     font-size: 0.92rem;
   }
 
+  .gs-result-burst-button {
+    min-height: 50px;
+    border-radius: 18px;
+  }
+
   .gs-hud {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
@@ -2664,7 +2727,327 @@ button:disabled {
   box-shadow: 0 18px 30px rgba(29, 29, 31, 0.18);
 }
 
+.gs-ios-onboarding {
+  position: relative;
+  min-height: 100dvh;
+  overflow: hidden;
+  color: #f3f8ff;
+}
+
+.gs-ios-onboarding-backdrop {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(circle at 18% 12%, rgba(116, 231, 159, 0.2), transparent 34%),
+    radial-gradient(circle at 82% 16%, rgba(109, 177, 255, 0.24), transparent 32%),
+    linear-gradient(180deg, #04111d 0%, #071629 34%, #0b1e37 68%, #06111f 100%);
+}
+
+.gs-ios-onboarding--choice .gs-ios-onboarding-backdrop {
+  background:
+    radial-gradient(circle at 16% 12%, rgba(255, 210, 118, 0.16), transparent 34%),
+    radial-gradient(circle at 82% 12%, rgba(123, 199, 255, 0.24), transparent 32%),
+    linear-gradient(180deg, #091220 0%, #12203c 34%, #101a32 68%, #08111e 100%);
+}
+
+.gs-ios-onboarding--sync .gs-ios-onboarding-backdrop {
+  background:
+    radial-gradient(circle at 20% 10%, rgba(172, 129, 255, 0.18), transparent 34%),
+    radial-gradient(circle at 82% 18%, rgba(116, 231, 159, 0.2), transparent 32%),
+    linear-gradient(180deg, #0b1020 0%, #141937 34%, #101a31 68%, #09101d 100%);
+}
+
+.gs-ios-onboarding-shell {
+  position: relative;
+  z-index: 1;
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  max-width: 620px;
+  margin: 0 auto;
+  padding:
+    max(24px, calc(env(safe-area-inset-top) + 12px))
+    18px
+    max(28px, calc(env(safe-area-inset-bottom) + 14px));
+}
+
+.gs-ios-onboarding-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.gs-ios-onboarding-pill {
+  display: inline-flex;
+  align-items: center;
+  min-height: 40px;
+  padding: 0 16px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  backdrop-filter: blur(16px);
+  font-size: 0.83rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.gs-ios-onboarding-skip {
+  border: 0;
+  background: transparent;
+  color: rgba(243, 248, 255, 0.76);
+  font-size: 0.95rem;
+  font-weight: 600;
+}
+
+.gs-ios-onboarding-card {
+  display: grid;
+  gap: 24px;
+  padding: 24px;
+  border-radius: 34px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.16), rgba(255, 255, 255, 0.08));
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  box-shadow: 0 30px 80px rgba(4, 11, 24, 0.34);
+  backdrop-filter: blur(22px);
+}
+
+.gs-ios-onboarding-copy {
+  display: grid;
+  gap: 12px;
+}
+
+.gs-ios-onboarding-kicker {
+  font-size: 0.82rem;
+  font-weight: 700;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: rgba(223, 239, 255, 0.64);
+}
+
+.gs-ios-onboarding-copy h1 {
+  margin: 0;
+  font-family: "Outfit", sans-serif;
+  font-size: clamp(2.35rem, 7vw, 3.45rem);
+  line-height: 0.96;
+  letter-spacing: -0.05em;
+}
+
+.gs-ios-onboarding-copy p {
+  margin: 0;
+  max-width: 44ch;
+  color: rgba(231, 240, 252, 0.78);
+  font-size: 1rem;
+  line-height: 1.6;
+}
+
+.gs-ios-onboarding-device {
+  display: flex;
+  justify-content: center;
+}
+
+.gs-ios-onboarding-device-frame {
+  width: min(100%, 330px);
+  padding: 14px 14px 18px;
+  border-radius: 36px;
+  background: linear-gradient(180deg, rgba(8, 16, 29, 0.92), rgba(14, 25, 44, 0.96));
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    0 26px 50px rgba(4, 11, 24, 0.32);
+}
+
+.gs-ios-onboarding-notch {
+  width: 38%;
+  height: 18px;
+  margin: 0 auto 12px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.gs-ios-onboarding-device-topline {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  color: rgba(220, 234, 255, 0.82);
+  font-size: 0.84rem;
+  font-weight: 700;
+}
+
+.gs-ios-onboarding-device-topline strong {
+  display: inline-flex;
+  align-items: center;
+  min-height: 30px;
+  padding: 0 12px;
+  border-radius: 999px;
+  background: rgba(159, 232, 112, 0.16);
+  color: #d9ffbd;
+  font-size: 0.76rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.gs-ios-onboarding-device-hero {
+  display: grid;
+  place-items: center;
+  gap: 18px;
+  min-height: 260px;
+  margin-top: 14px;
+  padding: 28px 18px;
+  border-radius: 28px;
+  background:
+    radial-gradient(circle at 50% 30%, rgba(255, 255, 255, 0.14), transparent 42%),
+    linear-gradient(180deg, rgba(149, 185, 255, 0.18), rgba(64, 110, 182, 0.08));
+}
+
+.gs-ios-onboarding-icon-orb {
+  display: grid;
+  place-items: center;
+  width: 92px;
+  height: 92px;
+  border-radius: 28px;
+  background: linear-gradient(135deg, rgba(159, 232, 112, 0.28), rgba(109, 177, 255, 0.2));
+  color: #eff9ff;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.18),
+    0 16px 32px rgba(7, 18, 30, 0.24);
+}
+
+.gs-ios-onboarding-chip-row {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+}
+
+.gs-ios-onboarding-chip-row span {
+  display: inline-flex;
+  align-items: center;
+  min-height: 34px;
+  padding: 0 14px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.09);
+  color: rgba(236, 245, 255, 0.9);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.gs-ios-onboarding-choice-rail {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 14px;
+}
+
+.gs-ios-onboarding-choice-rail div {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 62px;
+  padding: 0 16px;
+  border-radius: 24px;
+  background: rgba(255, 255, 255, 0.08);
+  color: #f3f8ff;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  font-size: 0.92rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.gs-ios-onboarding-points {
+  display: grid;
+  gap: 12px;
+}
+
+.gs-ios-onboarding-point {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: start;
+  gap: 12px;
+}
+
+.gs-ios-onboarding-point span {
+  width: 10px;
+  height: 10px;
+  margin-top: 8px;
+  border-radius: 999px;
+  background: linear-gradient(135deg, #9fe870, #7ad5ff);
+  box-shadow: 0 0 18px rgba(159, 232, 112, 0.4);
+}
+
+.gs-ios-onboarding-point p {
+  margin: 0;
+  color: rgba(231, 240, 252, 0.78);
+  line-height: 1.55;
+}
+
+.gs-ios-onboarding-footer {
+  display: grid;
+  gap: 16px;
+  margin-top: 22px;
+}
+
+.gs-ios-onboarding-dots {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+}
+
+.gs-ios-onboarding-dots button {
+  width: 10px;
+  height: 10px;
+  padding: 0;
+  border: 0;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.26);
+}
+
+.gs-ios-onboarding-dots button.is-active {
+  width: 34px;
+  background: #f3f8ff;
+}
+
+.gs-ios-onboarding-error {
+  margin: 0;
+  text-align: center;
+  color: #ffd8d3;
+  font-size: 0.92rem;
+  font-weight: 600;
+}
+
+.gs-ios-onboarding-cta {
+  min-height: 64px;
+  border-radius: 26px;
+  background: linear-gradient(135deg, #ffffff, #ebf5ff);
+  color: #0f1a2b;
+  box-shadow: 0 18px 40px rgba(5, 12, 23, 0.28);
+}
+
+.gs-ios-onboarding-cta span {
+  font-weight: 800;
+  letter-spacing: 0.04em;
+}
+
 @media (max-width: 640px) {
+  .gs-ios-onboarding-shell {
+    padding-left: 14px;
+    padding-right: 14px;
+  }
+
+  .gs-ios-onboarding-card {
+    padding: 20px;
+    border-radius: 28px;
+  }
+
+  .gs-ios-onboarding-choice-rail {
+    grid-template-columns: 1fr;
+  }
+
   .gs-run-summary {
     padding: 18px;
     border-radius: 30px;
@@ -2691,6 +3074,29 @@ button:disabled {
 }
 
 @media (max-width: 420px) {
+  .gs-ios-onboarding-topbar {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .gs-ios-onboarding-pill {
+    min-height: 36px;
+    padding: 0 14px;
+    font-size: 0.76rem;
+  }
+
+  .gs-ios-onboarding-copy h1 {
+    font-size: 2.15rem;
+  }
+
+  .gs-ios-onboarding-device-frame {
+    border-radius: 30px;
+  }
+
+  .gs-ios-onboarding-device-hero {
+    min-height: 220px;
+  }
+
   .gs-run-summary-copy,
   .gs-run-summary-margin-card,
   .gs-run-score-card,

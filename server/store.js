@@ -385,7 +385,26 @@ async function mergePlayerDataIntoTarget(client, sourcePlayer, targetPlayer) {
   await client.query("DELETE FROM country_stats WHERE player_id = $1", [sourcePlayer.id]);
   await client.query("DELETE FROM daily_rumble_entries WHERE player_id = $1", [sourcePlayer.id]);
 
-  const recomputedTarget = await recomputePlayerAggregateState(client, targetPlayer.id, targetPlayer);
+  const mergedTargetResult = await client.query(
+    `
+      UPDATE players
+      SET onboarding_completed_at = CASE
+            WHEN onboarding_completed_at IS NULL THEN $2
+            WHEN $2 IS NULL THEN onboarding_completed_at
+            ELSE LEAST(onboarding_completed_at, $2)
+          END,
+          updated_at = now()
+      WHERE id = $1
+      RETURNING *
+    `,
+    [targetPlayer.id, sourcePlayer.onboarding_completed_at]
+  );
+
+  const recomputedTarget = await recomputePlayerAggregateState(
+    client,
+    targetPlayer.id,
+    mergedTargetResult.rows[0] ?? targetPlayer
+  );
   await client.query("DELETE FROM players WHERE id = $1", [sourcePlayer.id]);
 
   return recomputedTarget;
@@ -466,12 +485,33 @@ export async function buildPlayerSnapshot(client, playerId) {
       email: identityRow?.email ?? player.email,
       avatarUrl: player.avatar_url,
       authProvider: identityRow?.provider ?? player.auth_provider ?? "anonymous",
-      rank: getRankName(player.global_elo)
+      rank: getRankName(player.global_elo),
+      onboardingCompletedAt: player.onboarding_completed_at
     },
     authUser: createAuthUserFromIdentityRow(identityRow),
     stats: createStatsFromPlayerRow(player, historyRows),
     leaderboard: createLeaderboardEntries(leaderboardRows, playerId)
   };
+}
+
+export async function completePlayerOnboarding(client, playerId) {
+  const result = await client.query(
+    `
+      UPDATE players
+      SET onboarding_completed_at = COALESCE(onboarding_completed_at, now()),
+          updated_at = now()
+      WHERE id = $1
+      RETURNING *
+    `,
+    [playerId]
+  );
+
+  const player = result.rows[0] ?? null;
+  if (!player) {
+    throw new Error("Player profile not found for onboarding completion.");
+  }
+
+  return player;
 }
 
 export async function signInWithGooglePlayer(client, currentPlayerId, googleUser) {

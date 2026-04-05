@@ -49,6 +49,7 @@ export interface PlayerIdentity {
   avatarUrl: string | null;
   authProvider: string;
   rank: string;
+  onboardingCompletedAt: string | null;
 }
 
 export interface PlayerSnapshot {
@@ -113,6 +114,13 @@ export function completeGoogleSignIn(credential: string): Promise<PlayerSnapshot
 
 export function signOutToGuest(): Promise<PlayerSnapshot> {
   return apiFetch<PlayerSnapshot>("/api/auth/logout", {
+    method: "POST",
+    body: JSON.stringify({})
+  });
+}
+
+export function completeOnboarding(): Promise<PlayerSnapshot> {
+  return apiFetch<PlayerSnapshot>("/api/onboarding/complete", {
     method: "POST",
     body: JSON.stringify({})
   });

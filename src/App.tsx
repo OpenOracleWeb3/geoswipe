@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { LogOut, RotateCcw, Settings2, ShieldCheck, X } from "lucide-react";
 import { GeoChoiceCard } from "./components/mobile/GeoChoiceCard";
 import { GeoHomeScreen } from "./components/mobile/GeoHomeScreen";
+import { GeoOnboarding } from "./components/mobile/GeoOnboarding";
 import { GeoProfileScreen } from "./components/mobile/GeoProfileScreen";
 import { GeoSoloLobby } from "./components/mobile/GeoSoloLobby";
 import { RunSummaryCard } from "./components/mobile/RunSummaryCard";
@@ -10,7 +11,7 @@ import { calculateRoundScore } from "./lib/scoring";
 import { calculateSwipeElo, type PlayerStats } from "./lib/rankingEngine";
 import { buildSessionSummary, createGameSession } from "./lib/sessionEngine";
 import { getPreloadedRoundMedia, preloadRoundMedia } from "./services/geoApi";
-import { bootstrapPlayerSession, completeGoogleSignIn, persistCompletedSession, signOutToGuest, type LeaderboardEntry, type PlayerIdentity, type PlayerSnapshot } from "./services/backendApi";
+import { bootstrapPlayerSession, completeGoogleSignIn, completeOnboarding, persistCompletedSession, signOutToGuest, type LeaderboardEntry, type PlayerIdentity, type PlayerSnapshot } from "./services/backendApi";
 import { disableGoogleAutoSelect, type GoogleAuthUser, type GoogleSignInPayload } from "./services/googleIdentity";
 import type { CategoryMode, GamePhase, GeoRound, RoundMedia, RoundOutcome, SwipeDirection } from "./types/game";
 
@@ -81,9 +82,12 @@ function GeoSwipeApp() {
   const [isBootstrapping, setIsBootstrapping] = useState(true);
   const [bootstrapError, setBootstrapError] = useState<string | null>(null);
   const [sessionPersistError, setSessionPersistError] = useState<string | null>(null);
+  const [isPreparingResultAdvance, setIsPreparingResultAdvance] = useState(false);
+  const [canAdvanceFromResult, setCanAdvanceFromResult] = useState(false);
   const sessionRecordedRef = useRef(false);
 
   const transitionTimeoutRef = useRef<number | null>(null);
+  const resultAdvanceTokenRef = useRef(0);
   const { playRoundFeedback } = useRoundFeedback();
 
   const currentRound = session.rounds[roundIndex] ?? null;
@@ -166,6 +170,11 @@ function GeoSwipeApp() {
     setMenuOpen(false);
   };
 
+  const finishOnboarding = async () => {
+    const snapshot = await completeOnboarding();
+    applySnapshot(snapshot);
+  };
+
   const clearTransitionTimeout = () => {
     if (transitionTimeoutRef.current !== null) {
       window.clearTimeout(transitionTimeoutRef.current);
@@ -173,11 +182,18 @@ function GeoSwipeApp() {
     }
   };
 
+  const invalidatePendingResultAdvance = () => {
+    resultAdvanceTokenRef.current += 1;
+    clearTransitionTimeout();
+    setIsPreparingResultAdvance(false);
+    setCanAdvanceFromResult(false);
+  };
+
   const startNewSession = (category: CategoryMode = activeCategory) => {
     const bundle = createSessionBundle(category);
     setActiveCategory(category);
 
-    clearTransitionTimeout();
+    invalidatePendingResultAdvance();
     setMenuOpen(false);
     setScreen("playing");
     setSessionStartedAt(bundle.startedAt);
@@ -214,7 +230,13 @@ function GeoSwipeApp() {
     startNewSession(category as CategoryMode);
   };
 
-  useEffect(() => clearTransitionTimeout, []);
+  useEffect(
+    () => () => {
+      resultAdvanceTokenRef.current += 1;
+      clearTransitionTimeout();
+    },
+    []
+  );
 
   useEffect(() => {
     if (screen !== "playing" || !currentRound || sessionDone) {
@@ -306,6 +328,7 @@ function GeoSwipeApp() {
   }, [currentRound?.id, screen, session.seed]);
 
   const advanceRound = () => {
+    invalidatePendingResultAdvance();
     setLastOutcome(null);
 
     const nextIndex = roundIndex + 1;
@@ -325,7 +348,7 @@ function GeoSwipeApp() {
       return;
     }
 
-    clearTransitionTimeout();
+    invalidatePendingResultAdvance();
 
     const isCorrect = !timedOut && direction === currentRound.correctDirection;
     const selectedCountry = timedOut ? null : direction === "left" ? currentRound.leftOption : currentRound.rightOption;
@@ -388,8 +411,10 @@ function GeoSwipeApp() {
     setGlobalElo(nextElo);
     setLastSwipeEloDelta(swipeDelta);
 
-    // Hold the result screen for at least RESULT_FLASH_MIN_MS,
-    // and also wait for the next round's media metadata to be preloaded.
+    setIsPreparingResultAdvance(true);
+    const resultAdvanceToken = resultAdvanceTokenRef.current + 1;
+    resultAdvanceTokenRef.current = resultAdvanceToken;
+
     const nextRound = session.rounds[roundIndex + 1];
     const minDelay = new Promise<void>((r) => {
       transitionTimeoutRef.current = window.setTimeout(() => {
@@ -402,8 +427,21 @@ function GeoSwipeApp() {
       : Promise.resolve();
 
     void Promise.all([minDelay, nextImageReady]).then(() => {
-      advanceRound();
+      if (resultAdvanceTokenRef.current !== resultAdvanceToken) {
+        return;
+      }
+
+      setIsPreparingResultAdvance(false);
+      setCanAdvanceFromResult(true);
     });
+  };
+
+  const continueFromResult = () => {
+    if (!canAdvanceFromResult || phase !== "round_result") {
+      return;
+    }
+
+    advanceRound();
   };
 
   useEffect(() => {
@@ -468,6 +506,14 @@ function GeoSwipeApp() {
   }
 
   if (screen === "home") {
+    if (playerIdentity && !playerIdentity.onboardingCompletedAt) {
+      return (
+        <div className="gs-app-shell home">
+          <GeoOnboarding playerName={playerIdentity.displayName} onComplete={finishOnboarding} />
+        </div>
+      );
+    }
+
     return (
       <div className="gs-app-shell home">
         <GeoHomeScreen
@@ -619,6 +665,10 @@ function GeoSwipeApp() {
                 modifierLabel={currentRound.modifier === "none" ? undefined : getRoundModifierLabel(currentRound)}
                 elo={globalElo}
                 eloDelta={phase === "round_result" ? lastSwipeEloDelta : null}
+                canAdvanceFromResult={canAdvanceFromResult}
+                isPreparingNextStep={isPreparingResultAdvance}
+                hasNextRound={roundIndex + 1 < session.rounds.length}
+                onAdvanceFromResult={continueFromResult}
                 onGuess={resolveRound}
               />
             </div>
