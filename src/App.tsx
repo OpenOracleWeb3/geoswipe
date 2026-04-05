@@ -547,14 +547,14 @@ function GeoSwipeApp() {
                   <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
                     <ShieldCheck size={14} color={authUser ? "#9fe870" : "rgba(255,255,255,0.4)"} />
                     <span style={{ fontSize: 11, fontWeight: 800, letterSpacing: 1.2, textTransform: "uppercase", color: authUser ? "#9fe870" : "rgba(255,255,255,0.42)" }}>
-                      {authUser ? "Google linked" : "Guest mode"}
+                      {authUser ? "Google linked" : "Anonymous profile"}
                     </span>
                   </div>
                   <div style={{ fontWeight: 700, fontSize: 14 }}>
                     {playerIdentity?.displayName ?? authUser?.name ?? "GeoSwipe player"}
                   </div>
                   <div style={{ marginTop: 2, fontSize: 12, color: "rgba(255,255,255,0.5)" }}>
-                    {playerIdentity?.email ?? "Guest profile"}
+                    {playerIdentity?.email ?? "Not linked yet"}
                   </div>
                 </div>
                 <button type="button" className="gs-utility-menu-button" onClick={() => setMenuOpen(false)}>

@@ -1,31 +1,35 @@
+import { Capacitor } from "@capacitor/core";
+import { Preferences } from "@capacitor/preferences";
 import type { PlayerStats } from "../lib/rankingEngine";
 import type { CategoryMode, GameSessionPlan, RoundOutcome, SessionSummary } from "../types/game";
 import type { GoogleAuthUser } from "./googleIdentity";
 
 const SESSION_TOKEN_STORAGE_KEY = "geoswipe_session_token";
+const isNativePlatform = Capacitor.getPlatform() !== "web";
 
 function getApiBaseUrl(): string {
   const configured = import.meta.env.VITE_API_BASE_URL?.trim() ?? "";
   return configured.replace(/\/+$/, "");
 }
 
-function getStoredSessionToken(): string {
-  if (typeof window === "undefined") {
+async function getStoredSessionToken(): Promise<string> {
+  if (!isNativePlatform) {
     return "";
   }
 
-  return window.localStorage.getItem(SESSION_TOKEN_STORAGE_KEY) ?? "";
+  const { value } = await Preferences.get({ key: SESSION_TOKEN_STORAGE_KEY });
+  return value ?? "";
 }
 
-function setStoredSessionToken(token: string | null) {
-  if (typeof window === "undefined") {
+async function setStoredSessionToken(token: string | null) {
+  if (!isNativePlatform) {
     return;
   }
 
   if (token) {
-    window.localStorage.setItem(SESSION_TOKEN_STORAGE_KEY, token);
+    await Preferences.set({ key: SESSION_TOKEN_STORAGE_KEY, value: token });
   } else {
-    window.localStorage.removeItem(SESSION_TOKEN_STORAGE_KEY);
+    await Preferences.remove({ key: SESSION_TOKEN_STORAGE_KEY });
   }
 }
 
@@ -63,7 +67,7 @@ export interface RecordSessionResponse {
 }
 
 async function apiFetch<T>(input: string, init?: RequestInit): Promise<T> {
-  const sessionToken = getStoredSessionToken();
+  const sessionToken = await getStoredSessionToken();
   const response = await fetch(`${getApiBaseUrl()}${input}`, {
     credentials: "include",
     headers: {
@@ -90,7 +94,7 @@ async function apiFetch<T>(input: string, init?: RequestInit): Promise<T> {
       : null;
 
   if (nextSessionToken) {
-    setStoredSessionToken(nextSessionToken);
+    await setStoredSessionToken(nextSessionToken);
   }
 
   return payload as T;

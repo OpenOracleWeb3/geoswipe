@@ -105,17 +105,6 @@ export function GeoProfileScreen({
           <ArrowLeft size={14} />
           Back
         </button>
-        <div style={{
-          position: "absolute",
-          top: 10,
-          right: 14,
-          fontSize: 10,
-          color: "rgba(255,255,255,0.3)",
-          letterSpacing: 1,
-          textTransform: "uppercase"
-        }}>
-          Banner Art (Custom)
-        </div>
       </div>
 
       {/* Profile section */}
@@ -176,7 +165,7 @@ export function GeoProfileScreen({
             letterSpacing: 0.3
           }}
         >
-          {playerEmail ?? "Guest profile"}
+          {playerEmail ?? "Anonymous profile"}
         </div>
 
         {/* ELO + Rank */}
