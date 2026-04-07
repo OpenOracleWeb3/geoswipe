@@ -12,19 +12,19 @@ export function GeoBottomNav({ active, onChange }: GeoBottomNavProps) {
     <nav className="gs-bottom-nav">
       <button className={active === "home" ? "active" : ""} onClick={() => onChange("home")}>
         <House size={18} weight="fill" />
-        Home
+        <span className="gs-bottom-nav-label">Home</span>
       </button>
       <button className={active === "play" ? "active" : ""} onClick={() => onChange("play")}>
         <CompassRose size={18} weight="fill" />
-        Play
+        <span className="gs-bottom-nav-label">Play</span>
       </button>
       <button className={active === "leaderboard" ? "active" : ""} onClick={() => onChange("leaderboard")}>
         <Rows size={18} weight="fill" />
-        Leaders
+        <span className="gs-bottom-nav-label">Rank</span>
       </button>
       <button className={active === "profile" ? "active" : ""} onClick={() => onChange("profile")}>
         <UserCircle size={18} weight="fill" />
-        Profile
+        <span className="gs-bottom-nav-label">Me</span>
       </button>
     </nav>
   );

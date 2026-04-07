@@ -7,3 +7,4 @@ dist
 *.d.ts
 !vite-env.d.ts
 .vite
+.vercel
