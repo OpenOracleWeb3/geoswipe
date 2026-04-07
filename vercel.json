@@ -1,0 +1,8 @@
+{
+  "rewrites": [
+    {
+      "source": "/api/:path*",
+      "destination": "https://geoswipe-app.onrender.com/api/:path*"
+    }
+  ]
+}
