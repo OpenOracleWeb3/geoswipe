@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { ArrowLeft, Trophy } from "lucide-react";
+import { CaretLeft, Trophy } from "@phosphor-icons/react";
 import { getRankForElo, getRankProgress, getNextRank, type PlayerStats } from "../../lib/rankingEngine";
 import { GoogleAuthPanel } from "../auth/GoogleAuthPanel";
 import type { GoogleAuthUser, GoogleSignInPayload } from "../../services/googleIdentity";
@@ -102,7 +102,7 @@ export function GeoProfileScreen({
             fontFamily: "'Outfit', sans-serif"
           }}
         >
-          <ArrowLeft size={14} />
+          <CaretLeft size={14} weight="bold" />
           Back
         </button>
       </div>

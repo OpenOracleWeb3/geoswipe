@@ -1,4 +1,4 @@
-import { AlertCircle, LogOut, ShieldCheck, UserCircle2 } from "lucide-react";
+import { SignOut, ShieldCheckered, UserCircle, WarningCircle } from "@phosphor-icons/react";
 import { useEffect, useRef, useState } from "react";
 import {
   disableGoogleAutoSelect,
@@ -164,7 +164,7 @@ export function GoogleAuthPanel({
 
             <div style={{ minWidth: 0 }}>
               <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
-                <ShieldCheck size={16} color="#9fe870" />
+                <ShieldCheckered size={16} weight="fill" color="#9fe870" />
                 <span style={{ fontSize: 11, fontWeight: 800, letterSpacing: 1.4, textTransform: "uppercase", color: "#9fe870" }}>
                   Google linked
                 </span>
@@ -196,7 +196,7 @@ export function GoogleAuthPanel({
               fontWeight: 700
             }}
           >
-            <LogOut size={15} />
+            <SignOut size={15} weight="bold" />
             Sign out
           </button>
         </div>
@@ -207,7 +207,7 @@ export function GoogleAuthPanel({
   return (
     <div style={containerStyle}>
       <div style={{ display: "flex", alignItems: "flex-start", gap: 10 }}>
-        <UserCircle2 size={compact ? 18 : 20} color="#9fe870" style={{ flex: "0 0 auto", marginTop: 2 }} />
+        <UserCircle size={compact ? 18 : 20} weight="fill" color="#9fe870" style={{ flex: "0 0 auto", marginTop: 2 }} />
         <div style={{ minWidth: 0 }}>
           <div style={{ fontWeight: 800, fontSize: compact ? 16 : 18 }}>{title}</div>
           <p style={{ margin: "6px 0 0", color: "rgba(255,255,255,0.68)", lineHeight: 1.5 }}>{subtitle}</p>
@@ -234,7 +234,7 @@ export function GoogleAuthPanel({
               color: "rgba(255,255,255,0.82)"
             }}
           >
-            <AlertCircle size={14} style={{ flex: "0 0 auto", marginTop: 1 }} />
+            <WarningCircle size={14} weight="fill" style={{ flex: "0 0 auto", marginTop: 1 }} />
             <span style={{ fontSize: 12, lineHeight: 1.45 }}>{error}</span>
           </div>
         ) : null}

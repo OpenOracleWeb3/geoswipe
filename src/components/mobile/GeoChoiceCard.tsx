@@ -1,5 +1,5 @@
 import { AnimatePresence, motion, useMotionValue, useTransform, type PanInfo } from "framer-motion";
-import { ArrowBigLeft, ArrowBigRight, CircleHelp, Sparkles } from "lucide-react";
+import { ArrowFatLeft, ArrowFatRight, SealQuestion, Sparkle } from "@phosphor-icons/react";
 import { useRef, useState, type CSSProperties } from "react";
 import { getCountryFlagUrl } from "../../data/countryFlags";
 import type { GeoRound, RoundMedia, RoundOutcome, SwipeDirection } from "../../types/game";
@@ -19,10 +19,6 @@ interface GeoChoiceCardProps {
   modifierLabel?: string;
   elo?: number;
   eloDelta?: number | null;
-  canAdvanceFromResult?: boolean;
-  isPreparingNextStep?: boolean;
-  hasNextRound?: boolean;
-  onAdvanceFromResult?: () => void;
   onGuess: (direction: SwipeDirection) => void;
 }
 
@@ -44,10 +40,6 @@ export function GeoChoiceCard({
   modifierLabel,
   elo,
   eloDelta,
-  canAdvanceFromResult = false,
-  isPreparingNextStep = false,
-  hasNextRound = true,
-  onAdvanceFromResult,
   onGuess
 }: GeoChoiceCardProps) {
   const [swipeDirection, setSwipeDirection] = useState<SwipeDirection | null>(null);
@@ -95,14 +87,6 @@ export function GeoChoiceCard({
     ? `${resultOutcome.scoreBreakdown.delta >= 0 ? "+" : ""}${resultOutcome.scoreBreakdown.delta} pts`
     : null;
   const resultEloLabel = eloDelta != null ? `${eloDelta >= 0 ? "+" : ""}${eloDelta} ELO` : null;
-  const resultAdvanceLabel = hasNextRound ? "Next Round" : "See Results";
-  const resultAdvanceHint = hasNextRound
-    ? isPreparingNextStep
-      ? "Loading the next Street View..."
-      : "Next panorama is ready."
-    : isPreparingNextStep
-      ? "Preparing your final run summary..."
-      : "Run complete. Open the summary.";
   const frameStyle = {
     "--gs-load-progress": `${Math.max(0, Math.min(100, Math.round(loadingProgress)))}%`,
     "--gs-timer-progress": `${Math.max(0, Math.min(100, Math.round((timerProgress ?? 1) * 100)))}%`
@@ -177,7 +161,7 @@ export function GeoChoiceCard({
             className={`gs-direction-hint gs-direction-left ${minimal ? "minimal" : ""}`}
             style={{ opacity: leftHintOpacity }}
           >
-            <ArrowBigLeft size={20} />
+            <ArrowFatLeft size={20} weight="fill" />
             <span>{round.leftOption}</span>
           </motion.div>
 
@@ -186,7 +170,7 @@ export function GeoChoiceCard({
             style={{ opacity: rightHintOpacity }}
           >
             <span>{round.rightOption}</span>
-            <ArrowBigRight size={20} />
+            <ArrowFatRight size={20} weight="fill" />
           </motion.div>
         </>
       ) : null}
@@ -263,7 +247,7 @@ export function GeoChoiceCard({
           <div className={`gs-image-shell ${minimal ? "minimal" : ""} ${panoMode ? "interactive" : ""}`}>
             {isLoadingImage ? (
                 <div className="gs-image-loading">
-                  <Sparkles size={18} />
+                  <Sparkle size={18} weight="fill" />
                   <strong>{Math.round(loadingProgress)}%</strong>
                   <span>Loading Street View...</span>
                 </div>
@@ -300,18 +284,6 @@ export function GeoChoiceCard({
                       {resultScoreLabel ? <span className="gs-result-burst-chip">{resultScoreLabel}</span> : null}
                       {elo != null ? <span className="gs-result-burst-chip">ELO {elo}</span> : null}
                     </div>
-
-                    <div className="gs-result-burst-actions">
-                      <p className="gs-result-burst-note">{resultAdvanceHint}</p>
-                      <button
-                        type="button"
-                        className="gs-result-burst-button"
-                        onClick={onAdvanceFromResult}
-                        disabled={!canAdvanceFromResult}
-                      >
-                        {canAdvanceFromResult ? resultAdvanceLabel : "Loading..."}
-                      </button>
-                    </div>
                   </motion.div>
                 </motion.div>
               ) : null}
@@ -334,7 +306,7 @@ export function GeoChoiceCard({
               {panoMode ? `Tap the ${questionLabel} that fits` : `Swipe or tap a ${questionLabel}`}
             </span>
             <div className="gs-choice-title">
-              <CircleHelp size={18} />
+              <SealQuestion size={18} weight="fill" />
               {round.mode === "city" ? "Which city is this?" : round.mode === "continent" ? "Which continent is this?" : "Where was this photo taken?"}
             </div>
             <p>{round.pair.rationale}</p>
@@ -356,7 +328,7 @@ export function GeoChoiceCard({
             <span className="gs-choice-action-label">
               {panoMode ? "Tap to choose" : (
                 <>
-                  <ArrowBigLeft size={18} />
+                  <ArrowFatLeft size={18} weight="fill" />
                   Swipe left
                 </>
               )}
@@ -372,7 +344,7 @@ export function GeoChoiceCard({
               {panoMode ? "Tap to choose" : (
                 <>
                   Swipe right
-                  <ArrowBigRight size={18} />
+                  <ArrowFatRight size={18} weight="fill" />
                 </>
               )}
             </span>

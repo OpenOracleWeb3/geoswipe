@@ -1,15 +1,15 @@
 import {
-  Compass,
-  Flame,
-  Globe2,
-  Map,
-  RotateCcw,
-  Target,
+  ArrowCounterClockwise,
+  CompassRose,
+  Crosshair,
+  Fire,
+  GlobeHemisphereWest,
+  MapTrifold,
   Timer,
   Trophy,
-  TrendingDown,
-  TrendingUp
-} from "lucide-react";
+  TrendDown,
+  TrendUp
+} from "@phosphor-icons/react";
 import { getNextRank, getRankForElo, getRankProgress } from "../../lib/rankingEngine";
 import type { SessionSummary } from "../../types/game";
 
@@ -133,7 +133,7 @@ export function RunSummaryCard({ summary, startedAt, eloDelta, elo, onRestart }:
         <article className="gs-run-score-card rival">
           <div className="gs-run-score-head">
             <div className="gs-run-score-label">
-              <Compass size={16} />
+              <CompassRose size={16} weight="fill" />
               <span>Rival</span>
             </div>
             <strong>{summary.rivalScore.toLocaleString()}</strong>
@@ -159,7 +159,7 @@ export function RunSummaryCard({ summary, startedAt, eloDelta, elo, onRestart }:
             <div className="gs-run-rank-numbers">
               <strong>{elo}</strong>
               <span className={`gs-run-rank-delta ${rankDeltaTone}`}>
-                {eloDelta >= 0 ? <TrendingUp size={15} /> : <TrendingDown size={15} />}
+                {eloDelta >= 0 ? <TrendUp size={15} weight="bold" /> : <TrendDown size={15} weight="bold" />}
                 {eloDelta >= 0 ? `+${eloDelta}` : eloDelta}
               </span>
             </div>
@@ -179,7 +179,7 @@ export function RunSummaryCard({ summary, startedAt, eloDelta, elo, onRestart }:
       <div className="gs-run-summary-panels">
         <article className="gs-run-summary-panel">
           <div className="gs-run-summary-panel-head">
-            <Target size={16} />
+            <Crosshair size={16} weight="fill" />
             <span>Performance</span>
           </div>
           <div className="gs-run-summary-stats-grid">
@@ -204,7 +204,7 @@ export function RunSummaryCard({ summary, startedAt, eloDelta, elo, onRestart }:
 
         <article className="gs-run-summary-panel">
           <div className="gs-run-summary-panel-head">
-            <Map size={16} />
+            <MapTrifold size={16} weight="fill" />
             <span>Coverage</span>
           </div>
           <div className="gs-run-summary-stats-grid">
@@ -238,7 +238,7 @@ export function RunSummaryCard({ summary, startedAt, eloDelta, elo, onRestart }:
         </div>
 
         <div className="gs-run-summary-meta-card">
-          <Flame size={16} />
+          <Fire size={16} weight="fill" />
           <div>
             <span>Difficulty mix</span>
             <strong>
@@ -248,7 +248,7 @@ export function RunSummaryCard({ summary, startedAt, eloDelta, elo, onRestart }:
         </div>
 
         <div className="gs-run-summary-meta-card">
-          <Globe2 size={16} />
+          <GlobeHemisphereWest size={16} weight="fill" />
           <div>
             <span>Board state</span>
             <strong>{summary.playerWon ? "Cleared" : "Still contested"}</strong>
@@ -257,7 +257,7 @@ export function RunSummaryCard({ summary, startedAt, eloDelta, elo, onRestart }:
       </div>
 
       <button className="gs-primary-button gs-run-summary-cta" onClick={onRestart}>
-        <RotateCcw size={16} />
+        <ArrowCounterClockwise size={16} weight="bold" />
         Start Another Run
       </button>
     </section>

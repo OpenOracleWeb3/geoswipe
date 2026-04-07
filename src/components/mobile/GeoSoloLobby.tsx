@@ -44,30 +44,6 @@ function getProgress(elo: number) {
   return ((elo - rank.min) / (rank.max - rank.min)) * 100;
 }
 
-function DailyRumbleCountdown() {
-  const [timeLeft, setTimeLeft] = useState("");
-
-  useEffect(() => {
-    function calc() {
-      const now = new Date();
-      const tomorrow = new Date(now);
-      tomorrow.setUTCHours(24, 0, 0, 0);
-      const diff = tomorrow.getTime() - now.getTime();
-      const h = Math.floor(diff / 3600000);
-      const m = Math.floor((diff % 3600000) / 60000);
-      const s = Math.floor((diff % 60000) / 1000);
-      setTimeLeft(
-        `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`
-      );
-    }
-    calc();
-    const interval = setInterval(calc, 1000);
-    return () => clearInterval(interval);
-  }, []);
-
-  return <span>{timeLeft}</span>;
-}
-
 interface GeoSoloLobbyProps {
   onPlay: (category: string) => void;
   onBack: () => void;
@@ -455,61 +431,14 @@ export function GeoSoloLobby({ onPlay, onBack, elo, authUser, onGoogleSignIn, on
             user={authUser}
             onSignIn={onGoogleSignIn}
             onSignOut={onGoogleSignOut}
-            title={authUser ? "Account connected" : "Connect Google"}
-            subtitle={
-              authUser
-                ? "Runs on this device are attached to your synced account."
-                : "Connect Google before you jump into a run."
-            }
-          />
-        </div>
-
-        {/* Daily Rumble */}
-        <div
-          style={{
-            width: "100%",
-            maxWidth: 360,
-            textAlign: "center",
-            marginBottom: 28,
-            animation: loaded ? "gs-lobby-slideUp 0.6s 0.25s cubic-bezier(0.25,0.46,0.45,0.94) both" : "none",
-          }}
-        >
-          <div
-            style={{
-              borderRadius: 16,
-              border: "1px solid rgba(255,165,0,0.15)",
-              background: "linear-gradient(135deg, rgba(255,165,0,0.06), rgba(13,31,60,0.5))",
-              padding: "16px 20px",
-              backdropFilter: "blur(8px)",
-            }}
-          >
-            <div
-              style={{
-                fontFamily: "'Outfit', sans-serif",
-                fontSize: 11,
-                fontWeight: 600,
-                color: "rgba(255,165,0,0.6)",
-                letterSpacing: 2.5,
-                textTransform: "uppercase",
-                marginBottom: 6,
-              }}
-            >
-              Next Daily Rumble
-            </div>
-            <div
-              style={{
-                fontFamily: "'JetBrains Mono', monospace",
-                fontSize: 32,
-                fontWeight: 700,
-                color: "#ffa500",
-                letterSpacing: 2,
-                animation: "gs-lobby-countdownPulse 2s ease-in-out infinite",
-              }}
-            >
-              <DailyRumbleCountdown />
-            </div>
-          </div>
-        </div>
+          title={authUser ? "Account connected" : "Connect Google"}
+          subtitle={
+            authUser
+              ? "Runs on this device are attached to your synced account."
+                : "Save this player before you jump into a run."
+          }
+        />
+      </div>
 
         {/* Category buttons */}
         <div

@@ -1,4 +1,4 @@
-import { Gauge, Layers, Timer, Zap } from "lucide-react";
+import { Lightning, Speedometer, Stack, Timer } from "@phosphor-icons/react";
 
 interface GameHudProps {
   round: number;
@@ -11,11 +11,11 @@ interface GameHudProps {
 
 export function GameHud({ round, totalRounds, secondsLeft, level, stageLabel, modifierLabel }: GameHudProps) {
   const items = [
-    { key: "stage", label: "Stage", value: stageLabel, icon: Layers },
-    { key: "round", label: "Round", value: `${round}/${totalRounds}`, icon: Layers },
+    { key: "stage", label: "Stage", value: stageLabel, icon: Stack },
+    { key: "round", label: "Round", value: `${round}/${totalRounds}`, icon: Stack },
     { key: "timer", label: "Timer", value: `${secondsLeft}s`, icon: Timer },
-    { key: "level", label: "Level", value: level, icon: Gauge },
-    { key: "pressure", label: "Pressure", value: modifierLabel, icon: Zap }
+    { key: "level", label: "Level", value: level, icon: Speedometer },
+    { key: "pressure", label: "Pressure", value: modifierLabel, icon: Lightning }
   ] as const;
 
   return (
@@ -34,7 +34,7 @@ export function GameHud({ round, totalRounds, secondsLeft, level, stageLabel, mo
           <article key={item.key} className={cardClass}>
             <div className="gs-hud-label">
               <span className="gs-hud-icon">
-                <Icon size={13} />
+                <Icon size={13} weight="fill" />
               </span>
               <span>{item.label}</span>
             </div>

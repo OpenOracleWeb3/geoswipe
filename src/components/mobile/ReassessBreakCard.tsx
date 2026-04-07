@@ -1,4 +1,4 @@
-import { AlertTriangle, ArrowRight, CheckCircle2 } from "lucide-react";
+import { ArrowRight, CheckCircle, WarningCircle } from "@phosphor-icons/react";
 import type { BreakContextPayload, GeoRound, RoundOutcome } from "../../types/game";
 
 interface ReassessBreakCardProps {
@@ -17,7 +17,7 @@ export function ReassessBreakCard({
   return (
     <section className="gs-break-card">
       <div className="gs-break-headline">
-        <AlertTriangle size={18} />
+        <WarningCircle size={18} weight="fill" />
         <div>
           <p>Reassess the read</p>
           <h2>{context?.headline ?? "Missed read"}</h2>
@@ -34,7 +34,7 @@ export function ReassessBreakCard({
 
         <article className="gs-break-context">
           <div className="gs-break-context-top">
-            <CheckCircle2 size={16} />
+            <CheckCircle size={16} weight="fill" />
             <span>Correct answer context</span>
           </div>
           <div
@@ -76,7 +76,7 @@ export function ReassessBreakCard({
 
       <button className="gs-primary-button" onClick={onContinue}>
         Back To The Run
-        <ArrowRight size={16} />
+        <ArrowRight size={16} weight="bold" />
       </button>
     </section>
   );

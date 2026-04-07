@@ -18,8 +18,10 @@
   },
   "dependencies": {
     "@capacitor/core": "^5.0.0",
+    "@capacitor/haptics": "^5.0.8",
     "@capacitor/ios": "^5.7.8",
     "@capacitor/preferences": "^5.0.8",
+    "@phosphor-icons/react": "^2.1.10",
     "concurrently": "^9.2.1",
     "cookie-parser": "^1.4.7",
     "dotenv": "^17.4.0",
@@ -27,7 +29,6 @@
     "express": "^5.2.1",
     "framer-motion": "^12.23.24",
     "jose": "^6.2.2",
-    "lucide-react": "^0.462.0",
     "pg": "^8.20.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1"

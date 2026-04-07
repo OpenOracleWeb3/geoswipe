@@ -1,5 +1,5 @@
+import { MapTrifold, NavigationArrow, X } from "@phosphor-icons/react";
 import { useEffect, useRef, useState } from "react";
-import { Map, Navigation, X } from "lucide-react";
 import { loadGoogleMapsApi } from "../../services/googleMapsLoader";
 import { traceRoundStreetViewPull, type StreetViewPullAttempt, type StreetViewPullTrace } from "../../services/geoApi";
 import type { GeoRound } from "../../types/game";
@@ -220,7 +220,7 @@ export function StreetViewPullMap({ round, onClose }: StreetViewPullMapProps) {
               color: "#fff"
             }}
           >
-            <X size={16} />
+            <X size={16} weight="bold" />
           </button>
         </div>
 
@@ -338,7 +338,7 @@ export function StreetViewPullMap({ round, onClose }: StreetViewPullMapProps) {
                         fontWeight: 600
                       }}
                     >
-                      {attempt.selected ? <Navigation size={14} /> : <Map size={14} />}
+                      {attempt.selected ? <NavigationArrow size={14} weight="fill" /> : <MapTrifold size={14} weight="fill" />}
                       {attempt.selected ? "Hit" : "Miss"}
                     </div>
                   </div>

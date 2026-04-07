@@ -1,8 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { LogOut, RotateCcw, Settings2, ShieldCheck, X } from "lucide-react";
+import { ArrowCounterClockwise, ShieldCheckered, SignOut, SlidersHorizontal, X } from "@phosphor-icons/react";
 import { GeoChoiceCard } from "./components/mobile/GeoChoiceCard";
 import { GeoHomeScreen } from "./components/mobile/GeoHomeScreen";
-import { GeoOnboarding } from "./components/mobile/GeoOnboarding";
 import { GeoProfileScreen } from "./components/mobile/GeoProfileScreen";
 import { GeoSoloLobby } from "./components/mobile/GeoSoloLobby";
 import { RunSummaryCard } from "./components/mobile/RunSummaryCard";
@@ -11,11 +10,11 @@ import { calculateRoundScore } from "./lib/scoring";
 import { calculateSwipeElo, type PlayerStats } from "./lib/rankingEngine";
 import { buildSessionSummary, createGameSession } from "./lib/sessionEngine";
 import { getPreloadedRoundMedia, preloadRoundMedia } from "./services/geoApi";
-import { bootstrapPlayerSession, completeGoogleSignIn, completeOnboarding, persistCompletedSession, signOutToGuest, type LeaderboardEntry, type PlayerIdentity, type PlayerSnapshot } from "./services/backendApi";
+import { bootstrapPlayerSession, completeGoogleSignIn, persistCompletedSession, signOutToGuest, type LeaderboardEntry, type PlayerIdentity, type PlayerSnapshot } from "./services/backendApi";
 import { disableGoogleAutoSelect, type GoogleAuthUser, type GoogleSignInPayload } from "./services/googleIdentity";
 import type { CategoryMode, GamePhase, GeoRound, RoundMedia, RoundOutcome, SwipeDirection } from "./types/game";
 
-const RESULT_FLASH_MIN_MS = 2500;
+const RESULT_FLASH_MIN_MS = 900;
 
 function createSessionBundle(category: CategoryMode = "countries") {
   const startedAt = new Date();
@@ -82,8 +81,6 @@ function GeoSwipeApp() {
   const [isBootstrapping, setIsBootstrapping] = useState(true);
   const [bootstrapError, setBootstrapError] = useState<string | null>(null);
   const [sessionPersistError, setSessionPersistError] = useState<string | null>(null);
-  const [isPreparingResultAdvance, setIsPreparingResultAdvance] = useState(false);
-  const [canAdvanceFromResult, setCanAdvanceFromResult] = useState(false);
   const sessionRecordedRef = useRef(false);
 
   const transitionTimeoutRef = useRef<number | null>(null);
@@ -170,11 +167,6 @@ function GeoSwipeApp() {
     setMenuOpen(false);
   };
 
-  const finishOnboarding = async () => {
-    const snapshot = await completeOnboarding();
-    applySnapshot(snapshot);
-  };
-
   const clearTransitionTimeout = () => {
     if (transitionTimeoutRef.current !== null) {
       window.clearTimeout(transitionTimeoutRef.current);
@@ -185,8 +177,6 @@ function GeoSwipeApp() {
   const invalidatePendingResultAdvance = () => {
     resultAdvanceTokenRef.current += 1;
     clearTransitionTimeout();
-    setIsPreparingResultAdvance(false);
-    setCanAdvanceFromResult(false);
   };
 
   const startNewSession = (category: CategoryMode = activeCategory) => {
@@ -411,7 +401,6 @@ function GeoSwipeApp() {
     setGlobalElo(nextElo);
     setLastSwipeEloDelta(swipeDelta);
 
-    setIsPreparingResultAdvance(true);
     const resultAdvanceToken = resultAdvanceTokenRef.current + 1;
     resultAdvanceTokenRef.current = resultAdvanceToken;
 
@@ -431,17 +420,8 @@ function GeoSwipeApp() {
         return;
       }
 
-      setIsPreparingResultAdvance(false);
-      setCanAdvanceFromResult(true);
+      advanceRound();
     });
-  };
-
-  const continueFromResult = () => {
-    if (!canAdvanceFromResult || phase !== "round_result") {
-      return;
-    }
-
-    advanceRound();
   };
 
   useEffect(() => {
@@ -497,7 +477,7 @@ function GeoSwipeApp() {
             </aside>
           </div>
           <button className="gs-primary-button gs-run-summary-cta" onClick={() => void refreshPlayerState()}>
-            <RotateCcw size={16} />
+            <ArrowCounterClockwise size={16} weight="bold" />
             Retry connection
           </button>
         </div>
@@ -506,14 +486,6 @@ function GeoSwipeApp() {
   }
 
   if (screen === "home") {
-    if (playerIdentity && !playerIdentity.onboardingCompletedAt) {
-      return (
-        <div className="gs-app-shell home">
-          <GeoOnboarding playerName={playerIdentity.displayName} onComplete={finishOnboarding} />
-        </div>
-      );
-    }
-
     return (
       <div className="gs-app-shell home">
         <GeoHomeScreen
@@ -573,7 +545,7 @@ function GeoSwipeApp() {
             aria-expanded={menuOpen}
             onClick={() => setMenuOpen((value) => !value)}
           >
-            {menuOpen ? <X size={18} /> : <Settings2 size={18} />}
+            {menuOpen ? <X size={18} weight="bold" /> : <SlidersHorizontal size={18} weight="bold" />}
           </button>
 
           {menuOpen ? (
@@ -591,7 +563,7 @@ function GeoSwipeApp() {
                   }}
                 >
                   <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
-                    <ShieldCheck size={14} color={authUser ? "#9fe870" : "rgba(255,255,255,0.4)"} />
+                    <ShieldCheckered size={14} weight="fill" color={authUser ? "#9fe870" : "rgba(255,255,255,0.4)"} />
                     <span style={{ fontSize: 11, fontWeight: 800, letterSpacing: 1.2, textTransform: "uppercase", color: authUser ? "#9fe870" : "rgba(255,255,255,0.42)" }}>
                       {authUser ? "Google linked" : "Anonymous profile"}
                     </span>
@@ -604,21 +576,21 @@ function GeoSwipeApp() {
                   </div>
                 </div>
                 <button type="button" className="gs-utility-menu-button" onClick={() => setMenuOpen(false)}>
-                  <X size={16} />
+                  <X size={16} weight="bold" />
                   Resume
                 </button>
                 <button type="button" className="gs-utility-menu-button" onClick={() => startNewSession()}>
-                  <RotateCcw size={16} />
+                  <ArrowCounterClockwise size={16} weight="bold" />
                   Restart Run
                 </button>
                 {authUser ? (
                   <button type="button" className="gs-utility-menu-button" onClick={signOutGoogle}>
-                    <LogOut size={16} />
+                    <SignOut size={16} weight="bold" />
                     Sign Out
                   </button>
                 ) : null}
                 <button type="button" className="gs-utility-menu-button danger" onClick={quitToStart}>
-                  <LogOut size={16} />
+                  <SignOut size={16} weight="bold" />
                   Quit Run
                 </button>
               </div>
@@ -665,10 +637,6 @@ function GeoSwipeApp() {
                 modifierLabel={currentRound.modifier === "none" ? undefined : getRoundModifierLabel(currentRound)}
                 elo={globalElo}
                 eloDelta={phase === "round_result" ? lastSwipeEloDelta : null}
-                canAdvanceFromResult={canAdvanceFromResult}
-                isPreparingNextStep={isPreparingResultAdvance}
-                hasNextRound={roundIndex + 1 < session.rounds.length}
-                onAdvanceFromResult={continueFromResult}
                 onGuess={resolveRound}
               />
             </div>

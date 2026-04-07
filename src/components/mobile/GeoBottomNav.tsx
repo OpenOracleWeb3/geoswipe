@@ -1,4 +1,4 @@
-import { Compass, Info, ScrollText } from "lucide-react";
+import { CompassRose, Info, Scroll } from "@phosphor-icons/react";
 
 export type GeoView = "play" | "learn" | "session";
 
@@ -11,15 +11,15 @@ export function GeoBottomNav({ active, onChange }: GeoBottomNavProps) {
   return (
     <nav className="gs-bottom-nav">
       <button className={active === "play" ? "active" : ""} onClick={() => onChange("play")}>
-        <Compass size={16} />
+        <CompassRose size={16} weight="fill" />
         Play
       </button>
       <button className={active === "learn" ? "active" : ""} onClick={() => onChange("learn")}>
-        <Info size={16} />
+        <Info size={16} weight="fill" />
         Guide
       </button>
       <button className={active === "session" ? "active" : ""} onClick={() => onChange("session")}>
-        <ScrollText size={16} />
+        <Scroll size={16} weight="fill" />
         Run
       </button>
     </nav>

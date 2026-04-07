@@ -1,13 +1,41 @@
+import { Capacitor } from "@capacitor/core";
+import { Haptics, ImpactStyle, NotificationType } from "@capacitor/haptics";
 import { useEffect, useRef } from "react";
 
 type FeedbackKind = "correct" | "incorrect" | "timeout";
 
 const SHARED_FEEDBACK_SOUND_URL = "/sounds/answer-feedback.wav";
+const isNativePlatform = Capacitor.getPlatform() !== "web";
 
 function triggerHaptic(pattern: number | number[]) {
   if ("vibrate" in navigator) {
     navigator.vibrate(pattern);
   }
+}
+
+async function triggerDeviceHaptics(kind: FeedbackKind) {
+  try {
+    if (isNativePlatform) {
+      if (kind === "correct") {
+        await Haptics.notification({ type: NotificationType.Success });
+        return;
+      }
+
+      if (kind === "timeout") {
+        await Haptics.notification({ type: NotificationType.Warning });
+        await Haptics.impact({ style: ImpactStyle.Medium });
+        return;
+      }
+
+      await Haptics.notification({ type: NotificationType.Error });
+      await Haptics.vibrate({ duration: 180 });
+      return;
+    }
+  } catch {
+    // Fall back to browser vibration when native haptics are unavailable.
+  }
+
+  triggerHaptic(getHapticPattern(kind));
 }
 
 function getHapticPattern(kind: FeedbackKind): number | number[] {
@@ -54,14 +82,11 @@ function playSynthFeedback(context: AudioContext, kind: FeedbackKind) {
   const now = context.currentTime;
 
   if (kind === "correct") {
-    // Coin hit transient.
-    createOscillator(context, 980, now, 0.03, 0.03, "square", 1480);
-    // Main "cha".
-    createOscillator(context, 720, now + 0.018, 0.11, 0.07, "triangle", 1120);
-    createOscillator(context, 1440, now + 0.018, 0.07, 0.028, "sine");
-    // Bright "ching".
-    createOscillator(context, 1040, now + 0.11, 0.16, 0.08, "triangle", 1560);
-    createOscillator(context, 2080, now + 0.11, 0.12, 0.026, "sine");
+    createOscillator(context, 920, now, 0.045, 0.026, "square", 1420);
+    createOscillator(context, 760, now + 0.02, 0.12, 0.072, "triangle", 1180);
+    createOscillator(context, 1520, now + 0.024, 0.09, 0.026, "sine");
+    createOscillator(context, 1180, now + 0.13, 0.2, 0.088, "triangle", 1820);
+    createOscillator(context, 2360, now + 0.13, 0.16, 0.024, "sine");
     return;
   }
 
@@ -120,9 +145,13 @@ export function useRoundFeedback() {
 
   const playRoundFeedback = async ({ correct, timedOut }: { correct: boolean; timedOut: boolean }) => {
     const kind: FeedbackKind = timedOut ? "timeout" : correct ? "correct" : "incorrect";
-    triggerHaptic(getHapticPattern(kind));
+    void triggerDeviceHaptics(kind);
 
     if (typeof window === "undefined") {
+      return;
+    }
+
+    if (kind !== "correct") {
       return;
     }
 

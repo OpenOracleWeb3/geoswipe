@@ -127,9 +127,7 @@ export function GeoHomeScreen({ onStartSolo, onProfile, elo, authUser, onGoogleS
   }, []);
 
   const modes = [
-    { id: "solo", label: "Solo", icon: "\uD83C\uDFAF", available: true, desc: "Test your geography knowledge" },
-    { id: "coop", label: "Co-op", icon: "\uD83E\uDD1D", available: false, desc: "Coming Soon" },
-    { id: "competitive", label: "Competitive", icon: "\u2694\uFE0F", available: false, desc: "Coming Soon" },
+    { id: "solo", label: "Solo Run", icon: "\uD83C\uDFAF", available: true, desc: "Play the live 20-round Street View run" }
   ];
 
   const handleModeClick = (modeId: string) => {
@@ -358,7 +356,7 @@ export function GeoHomeScreen({ onStartSolo, onProfile, elo, authUser, onGoogleS
           subtitle={
             authUser
               ? "This GeoSwipe profile is now synced to your Google account."
-              : "Sync this GeoSwipe profile to your Google account."
+              : "Save this GeoSwipe profile to your Google account."
           }
         />
       </div>
