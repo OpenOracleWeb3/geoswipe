@@ -1,6 +1,6 @@
-import { CompassRose, Info, Scroll } from "@phosphor-icons/react";
+import { CompassRose, House, Rows, UserCircle } from "@phosphor-icons/react";
 
-export type GeoView = "play" | "learn" | "session";
+export type GeoView = "home" | "play" | "leaderboard" | "profile";
 
 interface GeoBottomNavProps {
   active: GeoView;
@@ -10,17 +10,21 @@ interface GeoBottomNavProps {
 export function GeoBottomNav({ active, onChange }: GeoBottomNavProps) {
   return (
     <nav className="gs-bottom-nav">
+      <button className={active === "home" ? "active" : ""} onClick={() => onChange("home")}>
+        <House size={18} weight="fill" />
+        Home
+      </button>
       <button className={active === "play" ? "active" : ""} onClick={() => onChange("play")}>
-        <CompassRose size={16} weight="fill" />
+        <CompassRose size={18} weight="fill" />
         Play
       </button>
-      <button className={active === "learn" ? "active" : ""} onClick={() => onChange("learn")}>
-        <Info size={16} weight="fill" />
-        Guide
+      <button className={active === "leaderboard" ? "active" : ""} onClick={() => onChange("leaderboard")}>
+        <Rows size={18} weight="fill" />
+        Leaders
       </button>
-      <button className={active === "session" ? "active" : ""} onClick={() => onChange("session")}>
-        <Scroll size={16} weight="fill" />
-        Run
+      <button className={active === "profile" ? "active" : ""} onClick={() => onChange("profile")}>
+        <UserCircle size={18} weight="fill" />
+        Profile
       </button>
     </nav>
   );

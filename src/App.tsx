@@ -1,7 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { ArrowCounterClockwise, ShieldCheckered, SignOut, SlidersHorizontal, X } from "@phosphor-icons/react";
 import { GeoChoiceCard } from "./components/mobile/GeoChoiceCard";
+import { GeoBottomNav, type GeoView } from "./components/mobile/GeoBottomNav";
 import { GeoHomeScreen } from "./components/mobile/GeoHomeScreen";
+import { GeoLeaderboardScreen } from "./components/mobile/GeoLeaderboardScreen";
 import { GeoProfileScreen } from "./components/mobile/GeoProfileScreen";
 import { GeoSoloLobby } from "./components/mobile/GeoSoloLobby";
 import { RunSummaryCard } from "./components/mobile/RunSummaryCard";
@@ -53,7 +55,7 @@ function applySnapshotToState(
 
 function GeoSwipeApp() {
   const initialBundle = useMemo(() => createSessionBundle(), []);
-  const [screen, setScreen] = useState<"home" | "solo_lobby" | "profile" | "playing">("home");
+  const [screen, setScreen] = useState<"home" | "solo_lobby" | "leaderboard" | "profile" | "playing">("home");
   const [activeCategory, setActiveCategory] = useState<CategoryMode>("countries");
   const [menuOpen, setMenuOpen] = useState(false);
   const [sessionStartedAt, setSessionStartedAt] = useState(initialBundle.startedAt);
@@ -214,6 +216,36 @@ function GeoSwipeApp() {
 
   const openSoloLobby = () => {
     setScreen("solo_lobby");
+  };
+
+  const activeNavView: GeoView =
+    screen === "profile"
+      ? "profile"
+      : screen === "solo_lobby" || screen === "playing"
+        ? "play"
+        : screen === "leaderboard"
+          ? "leaderboard"
+          : "home";
+
+  const handleBottomNavChange = (view: GeoView) => {
+    setMenuOpen(false);
+
+    if (view === "home") {
+      setScreen("home");
+      return;
+    }
+
+    if (view === "play") {
+      setScreen(screen === "playing" && !sessionDone ? "playing" : "solo_lobby");
+      return;
+    }
+
+    if (view === "leaderboard") {
+      setScreen("leaderboard");
+      return;
+    }
+
+    setScreen("profile");
   };
 
   const startSoloRun = (category: string) => {
@@ -496,6 +528,7 @@ function GeoSwipeApp() {
           onGoogleSignIn={handleGoogleSignIn}
           onGoogleSignOut={signOutGoogle}
         />
+        <GeoBottomNav active={activeNavView} onChange={handleBottomNavChange} />
       </div>
     );
   }
@@ -515,6 +548,23 @@ function GeoSwipeApp() {
           onGoogleSignIn={handleGoogleSignIn}
           onGoogleSignOut={signOutGoogle}
         />
+        <GeoBottomNav active={activeNavView} onChange={handleBottomNavChange} />
+      </div>
+    );
+  }
+
+  if (screen === "leaderboard") {
+    return (
+      <div className="gs-app-shell home">
+        <GeoLeaderboardScreen
+          elo={globalElo}
+          leaderboard={leaderboard}
+          playerIdentity={playerIdentity}
+          authUser={authUser}
+          onGoogleSignIn={handleGoogleSignIn}
+          onGoogleSignOut={signOutGoogle}
+        />
+        <GeoBottomNav active={activeNavView} onChange={handleBottomNavChange} />
       </div>
     );
   }
@@ -530,6 +580,7 @@ function GeoSwipeApp() {
           onGoogleSignIn={handleGoogleSignIn}
           onGoogleSignOut={signOutGoogle}
         />
+        <GeoBottomNav active={activeNavView} onChange={handleBottomNavChange} />
       </div>
     );
   }
@@ -618,7 +669,7 @@ function GeoSwipeApp() {
               {sessionPersistError}
             </div>
           ) : null}
-          {sessionDone ? <RunSummaryCard summary={summary} startedAt={sessionStartedAt} eloDelta={eloDelta} elo={globalElo} onRestart={startNewSession} /> : null}
+          {sessionDone ? <RunSummaryCard summary={summary} startedAt={sessionStartedAt} eloDelta={eloDelta} elo={globalElo} onRestart={() => startNewSession()} /> : null}
 
           {!sessionDone && currentRound ? (
             <div className="gs-live-round-shell">
@@ -643,6 +694,8 @@ function GeoSwipeApp() {
           ) : null}
         </section>
       </main>
+
+      {sessionDone ? <GeoBottomNav active={activeNavView} onChange={handleBottomNavChange} /> : null}
     </div>
   );
 }

@@ -1,9 +1,18 @@
-import { useState, useEffect } from "react";
-import { CaretLeft, Trophy } from "@phosphor-icons/react";
-import { getRankForElo, getRankProgress, getNextRank, type PlayerStats } from "../../lib/rankingEngine";
+import { CaretLeft, Crosshair, Fire, Trophy, TrendUp } from "@phosphor-icons/react";
+import { type CSSProperties, useEffect, useState } from "react";
+import { getNextRank, getRankForElo, getRankProgress, type PlayerStats } from "../../lib/rankingEngine";
 import { GoogleAuthPanel } from "../auth/GoogleAuthPanel";
 import type { GoogleAuthUser, GoogleSignInPayload } from "../../services/googleIdentity";
 import type { LeaderboardEntry } from "../../services/backendApi";
+
+const STARS = Array.from({ length: 54 }, (_, i) => ({
+  id: i,
+  x: `${Math.random() * 100}%`,
+  y: `${Math.random() * 100}%`,
+  size: `${Math.random() * 2 + 0.5}px`,
+  opacity: `${Math.random() * 0.55 + 0.18}`,
+  delay: `${Math.random() * 4.8}s`
+}));
 
 interface GeoProfileScreenProps {
   elo: number;
@@ -35,368 +44,179 @@ export function GeoProfileScreen({
   const rank = getRankForElo(elo);
   const progress = getRankProgress(elo);
   const nextRank = getNextRank(elo);
+  const accuracy = stats && stats.totalRounds > 0 ? Math.round((stats.totalCorrect / stats.totalRounds) * 100) : 0;
+  const winRate = stats && stats.totalSessions > 0 ? Math.round((stats.wins / stats.totalSessions) * 100) : 0;
 
   useEffect(() => {
     setLoaded(true);
   }, []);
 
+  const summaryStats = [
+    { label: "Sessions", value: stats?.totalSessions ?? 0, icon: Trophy },
+    { label: "Accuracy", value: `${accuracy}%`, icon: Crosshair },
+    { label: "Best streak", value: stats?.bestStreak ?? 0, icon: Fire },
+    { label: "Win rate", value: `${winRate}%`, icon: TrendUp }
+  ];
+
   return (
-    <div style={{
-      minHeight: "100vh",
-      background: "linear-gradient(170deg, #03090f 0%, #0a1628 30%, #0d1f3c 60%, #081224 100%)",
-      display: "flex",
-      flexDirection: "column",
-      alignItems: "center",
-      fontFamily: "'Outfit', sans-serif",
-      position: "relative",
-      overflow: "auto",
-      padding: "0 16px 40px",
-      WebkitOverflowScrolling: "touch"
-    }}>
-      <style>{`
-        @keyframes gs-profile-slideUp {
-          from { opacity: 0; transform: translateY(20px); }
-          to { opacity: 1; transform: translateY(0); }
-        }
-        @keyframes gs-profile-fadeIn {
-          from { opacity: 0; }
-          to { opacity: 1; }
-        }
-      `}</style>
-
-      {/* Banner art area */}
-      <div style={{
-        width: "100%",
-        maxWidth: 420,
-        height: 120,
-        borderRadius: "0 0 20px 20px",
-        background: `linear-gradient(135deg, ${rank.color}33, ${rank.color}11)`,
-        position: "relative",
-        overflow: "hidden",
-        marginBottom: -40
-      }}>
-        <div style={{
-          position: "absolute",
-          inset: 0,
-          background: `radial-gradient(circle at 30% 40%, ${rank.color}22, transparent 70%)`,
-        }} />
-        {/* Back button */}
-        <button
-          onClick={onBack}
-          style={{
-            position: "absolute",
-            top: 12,
-            left: 12,
-            display: "flex",
-            alignItems: "center",
-            gap: 6,
-            padding: "6px 14px",
-            borderRadius: 20,
-            border: "1px solid rgba(255,255,255,0.15)",
-            background: "rgba(0,0,0,0.4)",
-            color: "rgba(255,255,255,0.8)",
-            fontSize: 13,
-            fontWeight: 500,
-            cursor: "pointer",
-            backdropFilter: "blur(8px)",
-            fontFamily: "'Outfit', sans-serif"
-          }}
-        >
-          <CaretLeft size={14} weight="bold" />
-          Back
-        </button>
-      </div>
-
-      {/* Profile section */}
-      <div style={{
-        width: "100%",
-        maxWidth: 420,
-        zIndex: 2,
-        display: "flex",
-        flexDirection: "column",
-        alignItems: "center",
-        animation: loaded ? "gs-profile-slideUp 0.5s 0.1s cubic-bezier(0.25,0.46,0.45,0.94) both" : "none"
-      }}>
-        {/* Avatar */}
-        <div style={{
-          width: 80,
-          height: 80,
-          borderRadius: "50%",
-          border: `3px solid ${rank.color}`,
-          background: "linear-gradient(135deg, rgba(13,31,60,0.9), rgba(6,20,40,0.95))",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          fontSize: 36,
-          boxShadow: `0 0 20px ${rank.color}33`,
-          marginBottom: 8
-        }}>
-          {playerAvatarUrl ? (
-            <img
-              src={playerAvatarUrl}
-              alt={playerLabel}
-              style={{
-                width: "100%",
-                height: "100%",
-                borderRadius: "50%",
-                objectFit: "cover"
-              }}
-            />
-          ) : rank.icon}
-        </div>
-
-        {/* Username */}
-        <div style={{
-          fontFamily: "'Outfit', sans-serif",
-          fontWeight: 700,
-          fontSize: 22,
-          color: "#fff",
-          letterSpacing: 0.5,
-          marginBottom: 4
-        }}>
-          {playerLabel}
-        </div>
-
-        <div
-          style={{
-            marginBottom: 10,
-            fontSize: 13,
-            color: authUser ? "rgba(255,255,255,0.58)" : "rgba(255,255,255,0.34)",
-            letterSpacing: 0.3
-          }}
-        >
-          {playerEmail ?? "Anonymous profile"}
-        </div>
-
-        {/* ELO + Rank */}
-        <div style={{
-          display: "flex",
-          alignItems: "center",
-          gap: 10,
-          marginBottom: 12
-        }}>
-          <span style={{
-            fontFamily: "'JetBrains Mono', monospace",
-            fontWeight: 800,
-            fontSize: 32,
-            color: "#fff",
-            letterSpacing: -1
-          }}>
-            ELO: {elo}
-          </span>
-        </div>
-
-        <span style={{
-          fontWeight: 700,
-          fontSize: 16,
-          color: rank.color,
-          letterSpacing: 2,
-          textTransform: "uppercase",
-          marginBottom: 12
-        }}>
-          {rank.name}
-        </span>
-
-        {/* Progress bar */}
-        <div style={{ width: "100%", maxWidth: 320, marginBottom: 20 }}>
-          <div style={{
-            width: "100%",
-            height: 6,
-            borderRadius: 3,
-            background: "rgba(255,255,255,0.06)",
-            overflow: "hidden"
-          }}>
-            <div style={{
-              width: `${progress * 100}%`,
-              height: "100%",
-              borderRadius: 3,
-              background: `linear-gradient(90deg, ${rank.color}, ${rank.color}cc)`,
-              boxShadow: `0 0 10px ${rank.color}44`,
-              transition: "width 0.6s ease"
-            }} />
-          </div>
-          <div style={{
-            display: "flex",
-            justifyContent: "space-between",
-            marginTop: 4,
-            fontSize: 11,
-            color: "rgba(255,255,255,0.3)"
-          }}>
-            <span>{rank.min}</span>
-            <span>{nextRank ? `${nextRank.name} at ${nextRank.min}` : "Max Rank"}</span>
-          </div>
-        </div>
-
-        <div
-          style={{
-            width: "100%",
-            maxWidth: 360,
-            marginBottom: 24,
-            animation: loaded ? "gs-profile-slideUp 0.5s 0.16s cubic-bezier(0.25,0.46,0.45,0.94) both" : "none"
-          }}
-        >
-          <GoogleAuthPanel
-            user={authUser}
-            onSignIn={onGoogleSignIn}
-            onSignOut={onGoogleSignOut}
-            title={authUser ? "Account status" : "Sign in with Google"}
-            subtitle={
-              authUser
-                ? "Your GeoSwipe profile is attached to this Google account."
-                : "Sign in to bind this profile to Google."
+    <div className={`gs-shell-screen${loaded ? " is-loaded" : ""}`}>
+      <div className="gs-shell-stars" aria-hidden="true">
+        {STARS.map((star) => (
+          <div
+            key={star.id}
+            className="gs-shell-star"
+            style={
+              {
+                "--x": star.x,
+                "--y": star.y,
+                "--size": star.size,
+                "--opacity": star.opacity,
+                "--delay": star.delay
+              } as CSSProperties
             }
           />
+        ))}
+      </div>
+
+      <div className="gs-shell-wave gs-shell-wave-left" aria-hidden="true" />
+      <div className="gs-shell-wave gs-shell-wave-right" aria-hidden="true" />
+
+      <header className="gs-shell-header gs-shell-animate" style={{ "--delay": "0.04s" } as CSSProperties}>
+        <button type="button" className="gs-shell-back" onClick={onBack}>
+          <CaretLeft size={16} weight="bold" />
+          Back
+        </button>
+
+        <div className="gs-shell-title-block">
+          <p className="gs-shell-kicker">
+            <Trophy size={15} weight="fill" />
+            Pilot Profile
+          </p>
+          <h1 className="gs-shell-title">Rank + History</h1>
+          <p className="gs-shell-subtitle">Your global rating, session record, and leaderboard position all live here.</p>
         </div>
+      </header>
 
-        {/* Stats row */}
-        {stats ? (
-          <div style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(3, 1fr)",
-            gap: 10,
-            width: "100%",
-            maxWidth: 360,
-            marginBottom: 24,
-            animation: loaded ? "gs-profile-slideUp 0.5s 0.2s cubic-bezier(0.25,0.46,0.45,0.94) both" : "none"
-          }}>
-            {[
-              { label: "Sessions", value: stats.totalSessions },
-              { label: "Win Rate", value: stats.totalSessions > 0 ? `${Math.round((stats.wins / stats.totalSessions) * 100)}%` : "---" },
-              { label: "Best Streak", value: stats.bestStreak },
-            ].map((stat) => (
-              <div key={stat.label} style={{
-                padding: "12px 8px",
-                borderRadius: 12,
-                background: "rgba(255,255,255,0.03)",
-                border: "1px solid rgba(255,255,255,0.06)",
-                textAlign: "center"
-              }}>
-                <div style={{ fontSize: 11, color: "rgba(255,255,255,0.35)", letterSpacing: 0.5, marginBottom: 4 }}>{stat.label}</div>
-                <div style={{ fontFamily: "'JetBrains Mono', monospace", fontWeight: 700, fontSize: 18, color: "#fff" }}>{stat.value}</div>
+      <main className="gs-shell-stack">
+        <section className="gs-shell-card gs-profile-hero gs-shell-animate" style={{ "--delay": "0.12s" } as CSSProperties}>
+          <div className="gs-profile-identity">
+            <div
+              className="gs-profile-avatar"
+              style={
+                {
+                  "--rank-border": rank.color,
+                  "--rank-glow": `${rank.color}33`
+                } as CSSProperties
+              }
+            >
+              {playerAvatarUrl ? <img src={playerAvatarUrl} alt={playerLabel} /> : <span>{rank.icon}</span>}
+            </div>
+
+            <div className="gs-profile-name-block">
+              <p className="gs-shell-kicker">Active Pilot</p>
+              <h2 className="gs-profile-name">{playerLabel}</h2>
+              <p className="gs-profile-email">{playerEmail ?? "Guest profile"}</p>
+
+              <div className="gs-profile-rank-line">
+                <div
+                  className="gs-shell-rank-pill"
+                  style={
+                    {
+                      "--rank-glow": `${rank.color}18`,
+                      "--rank-border": `${rank.color}4d`,
+                      "--rank-color": rank.color
+                    } as CSSProperties
+                  }
+                >
+                  <span className="gs-shell-rank-icon" aria-hidden="true">
+                    {rank.icon}
+                  </span>
+                  <span>{rank.name}</span>
+                </div>
+
+                <span className="gs-profile-elo-pill">ELO {elo}</span>
               </div>
-            ))}
-          </div>
-        ) : null}
-
-        {/* Leaderboard */}
-        <div style={{
-          width: "100%",
-          maxWidth: 400,
-          borderRadius: 20,
-          border: "1px solid rgba(255,255,255,0.06)",
-          background: "linear-gradient(145deg, rgba(13,31,60,0.7), rgba(6,16,36,0.85))",
-          backdropFilter: "blur(16px)",
-          padding: "20px 16px",
-          position: "relative",
-          overflow: "hidden",
-          animation: loaded ? "gs-profile-slideUp 0.5s 0.3s cubic-bezier(0.25,0.46,0.45,0.94) both" : "none"
-        }}>
-          <div style={{
-            position: "absolute",
-            top: 0,
-            left: 0,
-            right: 0,
-            height: 1,
-            background: "linear-gradient(90deg, transparent, rgba(255,215,0,0.3), transparent)"
-          }} />
-
-          <div style={{
-            display: "flex",
-            alignItems: "center",
-            gap: 8,
-            marginBottom: 16,
-            justifyContent: "center"
-          }}>
-            <Trophy size={18} color="#ffd700" />
-            <span style={{
-              fontFamily: "'Dela Gothic One', sans-serif",
-              fontSize: 18,
-              color: "rgba(255,255,255,0.8)",
-              letterSpacing: 3,
-              textTransform: "uppercase"
-            }}>
-              Leaderboard
-            </span>
+            </div>
           </div>
 
-          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-            {leaderboard.map((entry) => {
-              const position = entry.rank;
-              const isTop3 = position <= 3;
-              const medalColor = position === 1 ? "#ffd700" : position === 2 ? "#c0c0c0" : position === 3 ? "#cd7f32" : undefined;
+          <div className="gs-shell-progress">
+            <div className="gs-shell-progress-track">
+              <div
+                className="gs-shell-progress-fill"
+                style={
+                  {
+                    width: `${progress * 100}%`,
+                    "--progress-color": rank.color
+                  } as CSSProperties
+                }
+              />
+            </div>
+            <div className="gs-shell-progress-meta">
+              <span>{rank.min}</span>
+              <span>{nextRank ? `${nextRank.name} at ${nextRank.min}` : "Top tier reached"}</span>
+            </div>
+          </div>
+
+          <div className="gs-profile-summary-grid">
+            {summaryStats.map((item) => {
+              const Icon = item.icon;
 
               return (
-                <div
-                  key={`${entry.playerId}-${position}`}
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 10,
-                    padding: "10px 12px",
-                    borderRadius: 12,
-                    background: entry.isYou
-                      ? `linear-gradient(135deg, ${rank.color}18, ${rank.color}08)`
-                      : "rgba(255,255,255,0.02)",
-                    border: entry.isYou
-                      ? `1.5px solid ${rank.color}55`
-                      : "1px solid transparent",
-                    transition: "all 0.2s"
-                  }}
-                >
-                  {/* Position */}
-                  <span style={{
-                    width: 28,
-                    textAlign: "center",
-                    fontFamily: "'JetBrains Mono', monospace",
-                    fontWeight: 700,
-                    fontSize: isTop3 ? 16 : 13,
-                    color: medalColor ?? "rgba(255,255,255,0.25)"
-                  }}>
-                    {isTop3 ? (position === 1 ? "\uD83E\uDD47" : position === 2 ? "\uD83E\uDD48" : "\uD83E\uDD49") : `${position}.`}
-                  </span>
-
-                  {/* Name */}
-                  <span style={{
-                    flex: 1,
-                    fontWeight: entry.isYou ? 700 : 500,
-                    fontSize: 15,
-                    color: entry.isYou ? rank.color : "rgba(255,255,255,0.5)",
-                    letterSpacing: 0.3
-                  }}>
-                    {entry.name}
-                  </span>
-
-                  {/* ELO */}
-                  <span style={{
-                    fontFamily: "'JetBrains Mono', monospace",
-                    fontWeight: 600,
-                    fontSize: 14,
-                    color: entry.isYou ? "#fff" : "rgba(255,255,255,0.35)"
-                  }}>
-                    ELO {entry.elo}
-                  </span>
-
-                  {/* You badge */}
-                  {entry.isYou ? (
-                    <span style={{
-                      fontSize: 10,
-                      fontWeight: 700,
-                      color: rank.color,
-                      letterSpacing: 1.5,
-                      textTransform: "uppercase",
-                      padding: "3px 8px",
-                      borderRadius: 20,
-                      background: `${rank.color}15`
-                    }}>
-                      You
-                    </span>
-                  ) : null}
+                <div key={item.label} className="gs-profile-summary-card">
+                  <div className="gs-profile-summary-icon">
+                    <Icon size={16} weight="fill" />
+                  </div>
+                  <div className="gs-profile-summary-copy">
+                    <span>{item.label}</span>
+                    <strong>{item.value}</strong>
+                  </div>
                 </div>
               );
             })}
           </div>
+        </section>
+
+        <div className="gs-shell-auth-wrap gs-shell-animate" style={{ "--delay": "0.18s" } as CSSProperties}>
+          <GoogleAuthPanel
+            compact
+            user={authUser}
+            onSignIn={onGoogleSignIn}
+            onSignOut={onGoogleSignOut}
+            title={authUser ? "Account status" : "Connect Google"}
+            subtitle={
+              authUser
+                ? "This player is synced and ready to keep every score and session."
+                : "Link your account so this pilot keeps every run, rank, and history entry."
+            }
+          />
         </div>
-      </div>
+
+        <section className="gs-shell-card gs-shell-animate" style={{ "--delay": "0.24s" } as CSSProperties}>
+          <div className="gs-shell-section-head">
+            <p className="gs-shell-kicker">Leaderboard</p>
+            <h3>Global Standings</h3>
+          </div>
+
+          {leaderboard.length > 0 ? (
+            <div className="gs-profile-leaderboard">
+              {leaderboard.map((entry) => {
+                const medal = entry.rank === 1 ? "\uD83E\uDD47" : entry.rank === 2 ? "\uD83E\uDD48" : entry.rank === 3 ? "\uD83E\uDD49" : null;
+
+                return (
+                  <div key={`${entry.playerId}-${entry.rank}`} className={`gs-profile-leaderboard-row${entry.isYou ? " is-you" : ""}`}>
+                    <span className="gs-profile-leaderboard-rank">{medal ?? `${entry.rank}.`}</span>
+                    <span className="gs-profile-leaderboard-name">{entry.name}</span>
+                    <span className="gs-profile-leaderboard-elo">ELO {entry.elo}</span>
+                    {entry.isYou ? <span className="gs-profile-leaderboard-badge">You</span> : null}
+                  </div>
+                );
+              })}
+            </div>
+          ) : (
+            <div className="gs-profile-empty">Leaderboard data will appear once the backend has enough live players.</div>
+          )}
+        </section>
+      </main>
     </div>
   );
 }
